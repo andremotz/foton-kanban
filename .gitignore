@@ -1,0 +1,16 @@
+.DS_Store
+build/
+.build/
+DerivedData/
+*.xcuserdatad
+xcuserdata/
+.swiftpm/
+Package.resolved
+__pycache__/
+
+# Lokale Werkzeug-Einstellungen
+.claude/settings.local.json
+
+# Board-Daten gehören nicht in dieses Repo — sie bekommen ihr eigenes.
+# Ausnahme: das mitgelieferte Beispielboard.
+/Kanban*/

@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Core tests and app build
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      # Der Kern trägt die gesamte Logik — diese Tests sind der wertvolle Teil.
+      - name: Test FotonKanbanCore
+        run: swift test --package-path FotonKanbanCore
+
+      - name: Build the app
+        run: |
+          xcodebuild \
+            -project FotonKanban.xcodeproj \
+            -scheme FotonKanban \
+            -destination 'platform=macOS' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build
