@@ -59,10 +59,11 @@ Eintrag. **Welche Situationen es gibt, steht in der Konfiguration** — der Trac
 speichert nur den Zustand dazu. Eine neu hinzugefügte Situation erscheint
 dadurch auf allen Tracks, statt dass ältere bei der alten Liste hängenbleiben.
 
-Vorgabe: Auto, AirPods, Bose, Studio, Studio 45° (der Master, abgehört 45° neben
-dem Lautsprecher).
+Vorgabe: Auto, AirPods, Bose Kopfhörer, Bose Lautsprecher, Studio, Studio 45°
+(der Master, abgehört 45° neben dem Lautsprecher). Kopfhörer und Lautsprecher
+desselben Herstellers klingen verschieden genug für je eine eigene Zeile.
 
-Der Fortschritt steht als `2/5` auf der Karte, aber nur in der Mastering-Phase —
+Der Fortschritt steht als `2/6` auf der Karte, aber nur in der Mastering-Phase —
 vorher sagt die Liste nichts aus. „Zurücksetzen" nimmt alle Haken zurück und
 lässt die Notizen stehen; die sind der Befund vom letzten Durchgang.
 
@@ -110,7 +111,8 @@ Bassline ab 1:40 zu dominant.
 
 - [x] Auto — ok
 - [x] AirPods — Bass zu laut, 80–120 Hz
-- [ ] Bose
+- [ ] Bose Kopfhörer
+- [ ] Bose Lautsprecher
 - [ ] Studio
 - [ ] Studio 45°
 ```

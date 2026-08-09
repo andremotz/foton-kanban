@@ -56,8 +56,10 @@ struct TrackInspector: View {
                     ForEach($draft.checks) { $check in
                         HStack(spacing: 6) {
                             Toggle(isOn: $check.isChecked) {
+                                // Breit genug für "Bose Lautsprecher" — sonst
+                                // steht auf halber Liste nur "Bose Lauts…".
                                 Text(check.situation)
-                                    .frame(width: 78, alignment: .leading)
+                                    .frame(width: 134, alignment: .leading)
                                     .lineLimit(1)
                             }
                             .toggleStyle(.checkbox)
@@ -66,7 +68,7 @@ struct TrackInspector: View {
                                 .textFieldStyle(.roundedBorder)
                                 .font(.caption)
                                 .labelsHidden()
-                                .frame(minWidth: 50)
+                                .frame(minWidth: 40)
                         }
                     }
                 } header: {

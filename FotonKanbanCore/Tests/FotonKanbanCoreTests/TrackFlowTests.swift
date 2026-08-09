@@ -89,9 +89,15 @@ struct ChecklistTests {
         #expect(subject.checks[1].isChecked == false)
     }
 
-    @Test("Die neue 45°-Position gehört zur Vorgabe")
-    func defaultIncludesAngledStudioPosition() {
-        #expect(Config.default.listeningSituations.contains("Studio 45°"))
+    @Test("Die Vorgabe unterscheidet die Bose-Geräte und die 45°-Position")
+    func defaultCoversTheStudioSetup() {
+        let situations = Config.default.listeningSituations
+        #expect(situations.contains("Studio 45°"))
+        #expect(situations.contains("Bose Kopfhörer"))
+        #expect(situations.contains("Bose Lautsprecher"))
+        // "Bose" allein wäre mehrdeutig — Kopfhörer und Lautsprecher klingen
+        // verschieden genug, dass sie getrennt abgehört werden.
+        #expect(!situations.contains("Bose"))
     }
 
     @Test("Nicht mehr konfigurierte Situationen bleiben erhalten")
@@ -126,7 +132,7 @@ struct ChecklistTests {
         subject.setPhase(.mastering)
         subject.checks[0].isChecked = true
         subject.checks[1].isChecked = true
-        #expect(subject.checklistBadge == "2/5")
+        #expect(subject.checklistBadge == "2/6")
 
         // Am fertigen Track wäre der Fortschritt eine falsche Aufforderung.
         subject.move(to: .done)

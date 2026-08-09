@@ -1,4 +1,8 @@
-# Foton Kanban
+<p align="center">
+  <img src="Docs/icon.png" alt="" width="128">
+</p>
+
+<h1 align="center">Foton Kanban</h1>
 
 A native macOS kanban app for running music production in a home or project
 studio. One card is one song. Everything lives in plain Markdown files, one per
@@ -38,11 +42,13 @@ counts as passed: before mastering the track advances one phase and returns to
 else is a plain column change. A track that fails review goes back to
 `in progress` and keeps its phase.
 
-**A listening checklist per track** — car, AirPods, headphones, studio, and the
-master heard 45° off-axis from the speaker. The situations are configured once
+**A listening checklist per track** — car, AirPods, Bose headphones, Bose
+speakers, the studio monitors, and the master heard 45° off-axis from the
+speaker. Headphones and speakers of the same brand sound different enough to
+deserve their own line. The situations are configured once
 in `.foton/config.md` and the track only stores the ticks and notes, so adding a
 new listening position makes it appear on every track at once. Progress shows as
-`2/5` on the card while a track is being mastered.
+`2/6` on the card while a track is being mastered.
 
 ## Requirements
 
@@ -95,7 +101,8 @@ Bass line from 1:40 is too dominant.
 
 - [x] Auto — ok
 - [x] AirPods — too much bass, 80–120 Hz
-- [ ] Bose
+- [ ] Bose Kopfhörer
+- [ ] Bose Lautsprecher
 - [ ] Studio
 - [ ] Studio 45°
 ```

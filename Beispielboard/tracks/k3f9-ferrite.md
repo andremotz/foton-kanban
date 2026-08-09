@@ -19,6 +19,7 @@ Bassline ab 1:40 zu dominant.
 
 - [x] Auto — ok
 - [x] AirPods — Bass zu laut, 80–120 Hz
-- [ ] Bose
+- [ ] Bose Kopfhörer
+- [ ] Bose Lautsprecher
 - [ ] Studio
 - [ ] Studio 45°

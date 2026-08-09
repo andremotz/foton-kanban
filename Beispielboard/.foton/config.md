@@ -1,5 +1,5 @@
 ---
-listening-situations: [Auto, AirPods, Bose, Studio, Studio 45°]
+listening-situations: [Auto, AirPods, Bose Kopfhörer, Bose Lautsprecher, Studio, Studio 45°]
 release-cadence-weeks: 6
 ---
 

@@ -10,7 +10,9 @@ public struct Config: Hashable, Codable, Sendable {
     public var releaseCadenceWeeks: Int
 
     public static let `default` = Config(
-        listeningSituations: ["Auto", "AirPods", "Bose", "Studio", "Studio 45°"],
+        listeningSituations: [
+            "Auto", "AirPods", "Bose Kopfhörer", "Bose Lautsprecher", "Studio", "Studio 45°",
+        ],
         releaseCadenceWeeks: 6
     )
 
