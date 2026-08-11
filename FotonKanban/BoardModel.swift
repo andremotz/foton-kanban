@@ -99,7 +99,7 @@ final class BoardModel {
             var list = index.bounces(matching: track.title)
             // Eine von Hand zugewiesene Datei steht vorn und ersetzt den
             // automatischen Fund an dieser Stelle.
-            if let pinned = pinnedBounce(for: track, root: root) {
+            if let pinned = pinnedBounce(for: track) {
                 list.removeAll { $0.url == pinned.url }
                 list.insert(pinned, at: 0)
             }
@@ -115,9 +115,9 @@ final class BoardModel {
         }
     }
 
-    private func pinnedBounce(for track: Track, root: URL) -> Bounce? {
+    private func pinnedBounce(for track: Track) -> Bounce? {
         guard let audio = track.audio, !audio.isEmpty else { return nil }
-        let url = Self.resolve(path: audio, relativeTo: root)
+        guard let url = repository.config.resolvedURL(for: audio) else { return nil }
         guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else {
             return nil
         }
@@ -130,41 +130,16 @@ final class BoardModel {
         )
     }
 
-    /// Absolute Pfade und `~` bleiben, alles andere gilt relativ zum
-    /// Previews-Ordner.
-    static func resolve(path: String, relativeTo root: URL) -> URL {
-        if path.hasPrefix("/") { return URL(fileURLWithPath: path) }
-        if path.hasPrefix("~") {
-            return URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
-        }
-        return root.appending(path: path, directoryHint: .notDirectory)
-    }
-
-    /// Umgekehrt: innerhalb des Previews-Ordners wird relativ gespeichert,
-    /// außerhalb mit `~`, damit der Eintrag auf mehreren Rechnern gilt.
-    static func store(url: URL, relativeTo root: URL) -> String {
-        let path = url.path(percentEncoded: false)
-        let rootPath = root.path(percentEncoded: false)
-        if path.hasPrefix(rootPath + "/") {
-            return String(path.dropFirst(rootPath.count + 1))
-        }
-        let home = FileManager.default.homeDirectoryForCurrentUser.path(percentEncoded: false)
-        if path.hasPrefix(home + "/") {
-            return "~/" + path.dropFirst(home.count + 1)
-        }
-        return path
-    }
-
     func bounces(for track: Track) -> [Bounce] { bouncesByTrack[track.id] ?? [] }
 
     /// Weist einem Track eine Datei fest zu.
     func setAudio(_ url: URL, for trackID: String) {
         guard var track = repository.tracks.first(where: { $0.id == trackID }) else { return }
-        guard let root = repository.config.previewsRootURL else {
+        guard repository.config.previewsRootURL != nil else {
             errorMessage = "Kein Previews-Ordner eingetragen. Trage previews-root in .foton/config.md ein."
             return
         }
-        track.audio = Self.store(url: url, relativeTo: root)
+        track.audio = repository.config.storedPath(for: url)
         track.updated = Date()
         update(track)
         indexBounces()
