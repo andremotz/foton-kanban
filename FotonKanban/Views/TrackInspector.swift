@@ -1,3 +1,4 @@
+import AppKit
 import FotonKanbanCore
 import SwiftUI
 
@@ -83,6 +84,35 @@ struct TrackInspector: View {
                 }
             }
 
+            let bounces = model.bounces(for: track)
+            if !bounces.isEmpty {
+                Section("Bounce") {
+                    BounceRow(bounce: bounces[0], isCurrent: true)
+
+                    if bounces.count > 1 {
+                        DisclosureGroup("Ältere Fassungen (\(bounces.count - 1))") {
+                            ForEach(bounces.dropFirst()) { bounce in
+                                BounceRow(bounce: bounce, isCurrent: false)
+                            }
+                        }
+                        .font(.caption)
+                    }
+
+                    if track.audio != nil {
+                        HStack {
+                            Label("Von Hand zugewiesen", systemImage: "pin")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Zuordnung lösen") { model.clearAudio(for: track.id) }
+                                .buttonStyle(.link)
+                                .font(.caption)
+                                .help("Danach sucht die App die aktuelle Fassung wieder selbst")
+                        }
+                    }
+                }
+            }
+
             Section {
                 if track.reviewRounds > 0 {
                     LabeledContent("Review-Runden", value: "\(track.reviewRounds)")
@@ -142,5 +172,52 @@ struct TrackInspector: View {
             .filter { !$0.isEmpty }
         guard tags != draft.tags else { return }
         draft.tags = tags
+    }
+}
+
+/// Eine Fassung: Dateiname, Datum und die beiden Wege dorthin.
+private struct BounceRow: View {
+    let bounce: Bounce
+    let isCurrent: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                NSWorkspace.shared.open(bounce.url)
+            } label: {
+                Image(systemName: isCurrent ? "play.circle.fill" : "play.circle")
+                    .font(isCurrent ? .title3 : .body)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .help("Im Standardprogramm öffnen")
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(bounce.fileName)
+                    .font(isCurrent ? .callout : .caption)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                HStack(spacing: 6) {
+                    if bounce.date > .distantPast {
+                        Text(bounce.date.formatted(date: .abbreviated, time: .omitted))
+                    }
+                    if bounce.isMaster { Text("Master") }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                NSWorkspace.shared.activateFileViewerSelecting([bounce.url])
+            } label: {
+                Image(systemName: "folder")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Im Finder zeigen")
+        }
+        .padding(.vertical, 1)
     }
 }

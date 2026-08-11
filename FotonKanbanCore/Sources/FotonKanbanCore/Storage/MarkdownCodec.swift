@@ -16,7 +16,7 @@ public enum MarkdownCodec {
 
     private static let trackKeys: Set<String> = [
         "id", "title", "phase", "status", "release", "order", "review-rounds",
-        "created", "updated", "tags",
+        "created", "updated", "tags", "audio",
     ]
 
     public static func decodeTrack(_ markdown: String, fallbackID: String) throws -> Track {
@@ -43,6 +43,7 @@ public enum MarkdownCodec {
             tags: front["tags"]?.listValue ?? [],
             notes: document[section: notesHeading] ?? "",
             checks: decodeChecks(document[section: checklistHeading] ?? ""),
+            audio: front.nonEmptyString("audio"),
             unknownFrontmatter: front.except(trackKeys),
             extraSections: document.sections(except: [notesHeading, checklistHeading])
         )
@@ -60,6 +61,7 @@ public enum MarkdownCodec {
         front.set("created", DateFormatting.timestamp(track.created))
         front.set("updated", DateFormatting.timestamp(track.updated))
         if !track.tags.isEmpty { front["tags"] = .list(track.tags) }
+        front.set("audio", track.audio)
         front.merge(unknown: track.unknownFrontmatter)
 
         var document = MarkdownDocument()
@@ -132,7 +134,8 @@ public enum MarkdownCodec {
             listeningSituations: situations.flatMap { $0.isEmpty ? nil : $0 }
                 ?? Config.default.listeningSituations,
             releaseCadenceWeeks: cadence.flatMap { $0 > 0 ? $0 : nil }
-                ?? Config.default.releaseCadenceWeeks
+                ?? Config.default.releaseCadenceWeeks,
+            previewsRoot: front.nonEmptyString("previews-root")
         )
     }
 
@@ -140,6 +143,7 @@ public enum MarkdownCodec {
         var front = Frontmatter()
         front["listening-situations"] = .list(config.listeningSituations)
         front.set("release-cadence-weeks", config.releaseCadenceWeeks)
+        front.set("previews-root", config.previewsRoot)
 
         var document = MarkdownDocument()
         document.frontmatter = front

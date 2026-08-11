@@ -50,6 +50,39 @@ in `.foton/config.md` and the track only stores the ticks and notes, so adding a
 new listening position makes it appear on every track at once. Progress shows as
 `2/6` on the card while a track is being mastered.
 
+## Hearing the current bounce
+
+Point the app at the folder where your preview bounces live and it links them
+to cards by itself:
+
+```markdown
+previews-root: ~/Music/Previews
+```
+
+The song name is read out of the file name — the date may sit at the front or
+the back, a time, a `preview` or `MASTER` marker and a leading track number are
+all recognised:
+
+```
+Ferrite preview 2022-12-28.mp3
+2025-03-22 2030 Halcyon.mp3
+7_Nightdrive 2026-05-03 Master.aif
+```
+
+The newest file wins, so the link stays current the moment you drop a new
+bounce in the folder — nothing is stored on the card. A speaker icon appears
+on cards that have one; clicking it opens the file in your default player. The
+inspector lists older versions with their dates for comparison.
+
+Matching tolerates typos on both sides, on either the file or the card. On a
+real catalogue of 1377 files against 81 tracks, 66 tracks found their bounce
+with no manual work, and every fuzzy match was correct — transposed letters and
+misspelled words included.
+
+Where the name is too different, drag the audio file from Finder onto the card.
+That writes an `audio:` entry into the track file which then takes precedence;
+"Zuordnung lösen" in the inspector removes it again.
+
 ## Requirements
 
 - macOS 14 or newer

@@ -20,8 +20,14 @@ final class BoardModel {
     var selectedTrackID: String?
     var searchText = ""
 
+    /// Zu jedem Track die gefundenen Fassungen, einmal beim Laden aufgelöst.
+    /// Die Suche gehört nicht in eine `body`-Auswertung — sie liefe sonst bei
+    /// jedem Neuzeichnen.
+    private(set) var bouncesByTrack: [String: [Bounce]] = [:]
+
     private var store: FileTrackStore?
     private var watcher: FolderWatcher?
+    private var previewsWatcher: FolderWatcher?
     /// Nach eigenen Schreibvorgängen kurz taub stellen — sonst löst jedes
     /// Speichern über FSEvents ein Neuladen aus.
     private var ignoreChangesUntil = Date.distantPast
@@ -55,6 +61,9 @@ final class BoardModel {
     func closeFolder() {
         watcher?.stop()
         watcher = nil
+        previewsWatcher?.stop()
+        previewsWatcher = nil
+        bouncesByTrack = [:]
         store = nil
         folderURL = nil
         repository = Repository()
@@ -66,9 +75,108 @@ final class BoardModel {
         do {
             repository = try store.load()
             errorMessage = nil
+            indexBounces()
         } catch {
             errorMessage = "Ordner konnte nicht gelesen werden: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Bounces
+
+    /// Baut den Index über den Previews-Ordner und löst ihn für alle Tracks
+    /// auf. Ohne eingetragenen Ordner bleibt alles leer und die Anzeige aus.
+    private func indexBounces() {
+        guard let root = repository.config.previewsRootURL else {
+            bouncesByTrack = [:]
+            previewsWatcher?.stop()
+            previewsWatcher = nil
+            return
+        }
+
+        let index = BounceIndex(root: root)
+        var resolved: [String: [Bounce]] = [:]
+        for track in repository.tracks {
+            var list = index.bounces(matching: track.title)
+            // Eine von Hand zugewiesene Datei steht vorn und ersetzt den
+            // automatischen Fund an dieser Stelle.
+            if let pinned = pinnedBounce(for: track, root: root) {
+                list.removeAll { $0.url == pinned.url }
+                list.insert(pinned, at: 0)
+            }
+            if !list.isEmpty { resolved[track.id] = list }
+        }
+        bouncesByTrack = resolved
+
+        if previewsWatcher == nil {
+            previewsWatcher = FolderWatcher(url: root) { [weak self] in
+                Task { @MainActor in self?.reload() }
+            }
+            previewsWatcher?.start()
+        }
+    }
+
+    private func pinnedBounce(for track: Track, root: URL) -> Bounce? {
+        guard let audio = track.audio, !audio.isEmpty else { return nil }
+        let url = Self.resolve(path: audio, relativeTo: root)
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else {
+            return nil
+        }
+        let stem = url.deletingPathExtension().lastPathComponent
+        return Bounce(
+            url: url,
+            songName: BounceNaming.songName(from: stem),
+            date: BounceNaming.date(from: stem) ?? Date.distantPast,
+            isMaster: stem.lowercased().contains("master")
+        )
+    }
+
+    /// Absolute Pfade und `~` bleiben, alles andere gilt relativ zum
+    /// Previews-Ordner.
+    static func resolve(path: String, relativeTo root: URL) -> URL {
+        if path.hasPrefix("/") { return URL(fileURLWithPath: path) }
+        if path.hasPrefix("~") {
+            return URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
+        }
+        return root.appending(path: path, directoryHint: .notDirectory)
+    }
+
+    /// Umgekehrt: innerhalb des Previews-Ordners wird relativ gespeichert,
+    /// außerhalb mit `~`, damit der Eintrag auf mehreren Rechnern gilt.
+    static func store(url: URL, relativeTo root: URL) -> String {
+        let path = url.path(percentEncoded: false)
+        let rootPath = root.path(percentEncoded: false)
+        if path.hasPrefix(rootPath + "/") {
+            return String(path.dropFirst(rootPath.count + 1))
+        }
+        let home = FileManager.default.homeDirectoryForCurrentUser.path(percentEncoded: false)
+        if path.hasPrefix(home + "/") {
+            return "~/" + path.dropFirst(home.count + 1)
+        }
+        return path
+    }
+
+    func bounces(for track: Track) -> [Bounce] { bouncesByTrack[track.id] ?? [] }
+
+    /// Weist einem Track eine Datei fest zu.
+    func setAudio(_ url: URL, for trackID: String) {
+        guard var track = repository.tracks.first(where: { $0.id == trackID }) else { return }
+        guard let root = repository.config.previewsRootURL else {
+            errorMessage = "Kein Previews-Ordner eingetragen. Trage previews-root in .foton/config.md ein."
+            return
+        }
+        track.audio = Self.store(url: url, relativeTo: root)
+        track.updated = Date()
+        update(track)
+        indexBounces()
+    }
+
+    /// Nimmt die feste Zuweisung zurück; danach greift wieder die Suche.
+    func clearAudio(for trackID: String) {
+        guard var track = repository.tracks.first(where: { $0.id == trackID }) else { return }
+        track.audio = nil
+        track.updated = Date()
+        update(track)
+        indexBounces()
     }
 
     /// Neuladen auf Zuruf des Watchers — unterdrückt, solange die eigenen

@@ -71,6 +71,26 @@ Zusätzlich zählt `review-rounds`, wie oft ein Track schon in Review war. Das i
 bewusst nur eine Zahl und keine Historie: die Revisionsschleife bleibt sichtbar,
 ohne dass für jede Runde ein Protokoll mitgeführt wird.
 
+### Bounces
+
+Die abgelegten Fassungen eines Songs werden **nicht am Track gespeichert**,
+sondern bei jedem Laden im Previews-Ordner gesucht. Damit ist die Verknüpfung
+nie veraltet: Ein neuer Bounce im Ordner ist sofort die aktuelle Fassung.
+
+Der Songname wird aus dem Dateinamen gewonnen, indem Datum, Uhrzeit,
+Füllwörter (`preview`, `MASTER`) und eine führende Titelnummer entfernt werden.
+Dieselbe Bereinigung greift auf den Track-Titel, weil manche Titel aus dem
+Jira-Import selbst Dateinamen sind. Verglichen wird erst exakt, dann unscharf
+über Damerau-Levenshtein ab einer Ähnlichkeit von 0,86 — das fängt Dreher wie
+`Slwo` gegen `Slow` ab, ohne verschiedene Songs zu verwechseln.
+
+Das **Datum stammt aus dem Dateinamen**, nicht aus dem Änderungsdatum: Ein
+Sync schreibt Zeitstempel neu, der Name bleibt.
+
+Passt kein Name, zieht man die Datei auf die Karte. Das schreibt `audio:` in
+die Track-Datei, und dieser Pfad gewinnt gegen die Suche — der einzige Fall,
+in dem etwas gespeichert wird.
+
 ## 2. Speicherformat
 
 Ein Markdown-File pro Track, eines pro Release. Ein Git-Repository als
@@ -84,7 +104,7 @@ FotonKanban/                     ← Git-Repo, Ort frei wählbar
 ├── releases/
 │   └── r-2026-09.md
 ├── archive/                     ← abgeschlossene Releases samt Tracks
-└── .foton/config.md             ← Abhörsituationen, Release-Kadenz
+└── .foton/config.md             ← Abhörsituationen, Kadenz, Previews-Ordner
 ```
 
 ### Track
@@ -210,7 +230,8 @@ Volltextsuche, Quick-Entry per Menüleiste.
 ## 6. Bewusst nicht enthalten
 
 - Zeiterfassung und Abrechnung
-- Anhänge und Dateiverwaltung
+- Anhänge und Dateiverwaltung; Bounces werden nur gelesen, nie geschrieben
+- Wiedergabe in der App — Bounces öffnen im Standardprogramm
 - Historie einzelner Review-Runden (nur der Zähler)
 - Mehrbenutzerbetrieb, Rechte, Server-Backend
 - iOS

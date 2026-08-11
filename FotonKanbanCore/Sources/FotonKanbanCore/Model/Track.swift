@@ -25,6 +25,10 @@ public struct Track: Hashable, Codable, Sendable, Identifiable {
     /// Abhör-Checkliste. Der Bestand kommt aus der Konfiguration, hier steht
     /// nur, was abgehakt und notiert wurde.
     public var checks: [ListeningCheck]
+    /// Fest zugeordnete Bounce-Datei. Steht hier nichts, sucht die App die
+    /// aktuelle Fassung selbst über den Songnamen — das ist der Normalfall.
+    /// Gefüllt wird das Feld nur, wenn eine Datei auf die Karte gezogen wurde.
+    public var audio: String?
 
     public var unknownFrontmatter: [String: FrontmatterValue]
     public var extraSections: [BodySection]
@@ -42,6 +46,7 @@ public struct Track: Hashable, Codable, Sendable, Identifiable {
         tags: [String] = [],
         notes: String = "",
         checks: [ListeningCheck] = [],
+        audio: String? = nil,
         unknownFrontmatter: [String: FrontmatterValue] = [:],
         extraSections: [BodySection] = []
     ) {
@@ -57,6 +62,7 @@ public struct Track: Hashable, Codable, Sendable, Identifiable {
         self.tags = tags
         self.notes = notes
         self.checks = checks
+        self.audio = audio
         self.unknownFrontmatter = unknownFrontmatter
         self.extraSections = extraSections
     }

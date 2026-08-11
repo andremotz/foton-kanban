@@ -1,15 +1,56 @@
+import AppKit
 import FotonKanbanCore
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// Übergabeformat für Drag and Drop. Das Präfix verhindert, dass beliebiger
-/// Text von außerhalb als Track interpretiert wird.
+/// Drag and Drop auf dem Board.
+///
+/// Auf einer Karte landen zwei verschiedene Dinge: eine andere Karte beim
+/// Umsortieren und eine Audiodatei aus dem Finder. SwiftUI erwartet pro
+/// Ansicht einen Zieltyp, deshalb laufen beide über **einen** Handler, der
+/// nach Anbietertyp verzweigt.
 enum TrackDrag {
     private static let prefix = "foton-track:"
 
+    /// Dateien zuerst: Ein Finder-Objekt bietet oft zusätzlich eine
+    /// Textdarstellung an, die sonst fälschlich als Karte gelesen würde.
+    static let acceptedTypes: [UTType] = [.fileURL, .utf8PlainText, .text]
+
     static func payload(_ id: String) -> String { prefix + id }
 
-    static func id(from items: [String]) -> String? {
-        items.first { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) }
+    static func id(from text: String) -> String? {
+        text.hasPrefix(prefix) ? String(text.dropFirst(prefix.count)) : nil
+    }
+
+    /// Verteilt die abgelegten Objekte. `audio` bleibt weg, wo Dateien nichts
+    /// zu suchen haben — etwa auf einer Spalte ohne Zielkarte.
+    @MainActor
+    static func handle(
+        _ providers: [NSItemProvider],
+        move: @escaping @MainActor (String) -> Void,
+        audio: (@MainActor (URL) -> Void)? = nil
+    ) -> Bool {
+        if let audio,
+            let provider = providers.first(where: {
+                $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+            })
+        {
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                guard let url,
+                    BounceIndex.audioExtensions.contains(url.pathExtension.lowercased())
+                else { return }
+                Task { @MainActor in audio(url) }
+            }
+            return true
+        }
+
+        guard let provider = providers.first(where: { $0.canLoadObject(ofClass: String.self) })
+        else { return false }
+        _ = provider.loadObject(ofClass: String.self) { text, _ in
+            guard let text, let id = id(from: text) else { return }
+            Task { @MainActor in move(id) }
+        }
+        return true
     }
 }
 
@@ -101,11 +142,11 @@ private struct ColumnView: View {
             }
         }
         .frame(minWidth: 170, maxWidth: .infinity)
-        .dropDestination(for: String.self) { items, _ in
-            guard let id = TrackDrag.id(from: items) else { return false }
-            model.move(trackID: id, to: status)
-            return true
-        } isTargeted: { isTargeted = $0 }
+        .onDrop(of: TrackDrag.acceptedTypes, isTargeted: $isTargeted) { providers in
+            TrackDrag.handle(providers) { id in
+                model.move(trackID: id, to: status)
+            }
+        }
     }
 }
 
@@ -143,6 +184,22 @@ private struct TrackCardView: View {
                     Text("Runde \(track.reviewRounds)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                // Ein Klick genügt zum Reinhören: die neueste Fassung im
+                // Standardprogramm.
+                if let bounce = model.bounces(for: track).first {
+                    Button {
+                        NSWorkspace.shared.open(bounce.url)
+                    } label: {
+                        Image(systemName: "waveform")
+                            .font(.caption)
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Anhören: \(bounce.fileName)")
                 }
             }
 
@@ -190,13 +247,22 @@ private struct TrackCardView: View {
         .contentShape(.rect)
         .onTapGesture { model.selectedTrackID = track.id }
         .draggable(TrackDrag.payload(track.id))
-        .dropDestination(for: String.self) { items, _ in
-            guard let id = TrackDrag.id(from: items), id != track.id else { return false }
-            model.move(trackID: id, to: status, before: track.id)
-            return true
-        } isTargeted: { isTargeted = $0 }
+        .onDrop(of: TrackDrag.acceptedTypes, isTargeted: $isTargeted) { providers in
+            TrackDrag.handle(providers) { id in
+                guard id != track.id else { return }
+                model.move(trackID: id, to: status, before: track.id)
+            } audio: { url in
+                model.setAudio(url, for: track.id)
+            }
+        }
         .contextMenu {
             Button("Öffnen") { model.selectedTrackID = track.id }
+            if let bounce = model.bounces(for: track).first {
+                Button("Bounce anhören") { NSWorkspace.shared.open(bounce.url) }
+                Button("Im Finder zeigen") {
+                    NSWorkspace.shared.activateFileViewerSelecting([bounce.url])
+                }
+            }
             Divider()
             Button("Löschen", role: .destructive) { model.delete(trackID: track.id) }
         }
