@@ -21,7 +21,7 @@ struct TrackInspector: View {
     var body: some View {
         Form {
             Section {
-                TextField("Titel", text: $draft.title, axis: .vertical)
+                TextField("Titel", text: $draft.title)
                     .font(.headline)
                     .textFieldStyle(.plain)
                     .labelsHidden()

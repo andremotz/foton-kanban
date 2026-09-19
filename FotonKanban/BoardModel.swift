@@ -109,7 +109,12 @@ final class BoardModel {
 
         if previewsWatcher == nil {
             previewsWatcher = FolderWatcher(url: root) { [weak self] in
-                Task { @MainActor in self?.reload() }
+                // Nur den Index auffrischen, nicht das Board neu laden: Ein
+                // Bounce im Previews-Ordner sagt nichts über die Track-Dateien
+                // aus. `reload()` ersetzte hier das gesamte Repository und
+                // zeichnete das Board komplett neu — bei einem Ordner, den
+                // Nextcloud laufend synchronisiert, immer wieder.
+                Task { @MainActor in self?.indexBounces() }
             }
             previewsWatcher?.start()
         }
