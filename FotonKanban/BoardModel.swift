@@ -313,11 +313,7 @@ final class BoardModel {
         guard var track = repository.tracks.first(where: { $0.id == trackID }) else { return }
 
         track.move(to: status)
-        // Eine bestandene Review schickt den Track in die nächste Phase und
-        // zurück nach `in progress` — deshalb zählt die Spalte, in der er
-        // tatsächlich landet, nicht die, auf die gezogen wurde.
-        let destination = track.status
-        var neighbours = repository.tracks(in: destination).filter { $0.id != trackID }
+        var neighbours = repository.tracks(in: status).filter { $0.id != trackID }
 
         let index = before.flatMap { id in neighbours.firstIndex { $0.id == id } } ?? neighbours.count
         let previousOrder = index > 0 ? neighbours[index - 1].order : nil
@@ -358,21 +354,14 @@ final class BoardModel {
             track.move(to: status)
             updated.append(track)
         }
-        // `move` kann die Phase weiterrücken und dabei die Spalte wechseln;
-        // maßgeblich ist, wo die Tracks tatsächlich landen.
-        let destination = updated[0].status
-        let inDestination = updated.filter { $0.status == destination }
-        let elsewhere = updated.filter { $0.status != destination }
-
-        var column = repository.tracks(in: destination).filter { !trackIDs.contains($0.id) }
+        var column = repository.tracks(in: status).filter { !trackIDs.contains($0.id) }
         let index = before.flatMap { id in column.firstIndex { $0.id == id } } ?? column.count
-        column.insert(contentsOf: inDestination, at: index)
+        column.insert(contentsOf: updated, at: index)
 
         var byID = Dictionary(uniqueKeysWithValues: column.map { ($0.id, $0) })
         for renumbered in Ordering.renumber(column) { byID[renumbered.id] = renumbered }
 
-        for track in inDestination { update(byID[track.id] ?? track) }
-        for track in elsewhere { update(track) }
+        for track in updated { update(byID[track.id] ?? track) }
         for track in column where !trackIDs.contains(track.id) {
             if let renumbered = byID[track.id], renumbered.order != track.order {
                 update(renumbered)

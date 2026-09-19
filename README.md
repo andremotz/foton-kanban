@@ -36,11 +36,11 @@ work on next.
 Arrangement, Mixdown, FX finalizing, Mastering. It shows as a badge on the card.
 Think of the phases as subdivisions of "in progress".
 
-**One automatic rule.** Drag a card from `in review` to `done` and the review
-counts as passed: before mastering the track advances one phase and returns to
-`in progress`; after mastering it is finished and stays in `done`. Everything
-else is a plain column change. A track that fails review goes back to
-`in progress` and keeps its phase.
+**Columns and phase are independent.** Dragging a card changes only its
+column — `done` means done, wherever it came from. The phase is set by hand in
+the side panel. An earlier version advanced the phase automatically when a
+review passed; it assumed phases are maintained per track and that each review
+closes exactly one, and in practice it just hijacked the most common gesture.
 
 **A listening checklist per track** — car, AirPods, Bose headphones, Bose
 speakers, the studio monitors, and the master heard 45° off-axis from the

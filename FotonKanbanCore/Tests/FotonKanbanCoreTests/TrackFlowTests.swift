@@ -9,14 +9,17 @@ struct TrackFlowTests {
         Track(id: "k3f9", title: "Ferrite", phase: phase, status: status)
     }
 
-    @Test("Bestandene Review rückt die Phase vor und schickt den Track zurück in Arbeit")
-    func passingReviewAdvancesPhase() {
+    /// Die Phase bleibt, wo sie ist. Früher rückte sie hier vor und der Track
+    /// sprang zurück nach `in progress` — was beim Ziehen nach done wie ein
+    /// Fehler wirkte.
+    @Test("Von in review nach done heißt schlicht fertig")
+    func reviewToDoneJustFinishes() {
         var subject = track(.mixdown, .review)
         subject.move(to: .done)
 
-        #expect(subject.phase == .fxFinalizing)
-        #expect(subject.status == .inProgress)
-        #expect(!subject.isFinished)
+        #expect(subject.phase == .mixdown)
+        #expect(subject.status == .done)
+        #expect(subject.isFinished)
     }
 
     @Test("Nach bestandenem Mastering ist der Track fertig")

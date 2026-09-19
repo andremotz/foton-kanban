@@ -31,15 +31,15 @@ auf der Karte und lässt sich im Inspector setzen.
 | FX finalizing | 4 |
 | Mastering | 5 |
 
-**Die einzige Automatik** hängt an der Review: Wandert ein Track von
-`in review` nach `done`, gilt die Review als bestanden. Vor dem Mastering rückt
-er dann in die nächste Phase und geht zurück auf `in progress`; nach bestandenem
-Mastering ist er fertig und bleibt in `done`. Alles andere ist ein schlichter
-Spaltenwechsel — wer einen Track direkt auf `done` zieht, markiert ihn von Hand
-als fertig.
+**Die Phase ändert sich nur von Hand.** Ein Spaltenwechsel ist ein
+Spaltenwechsel: `done` heißt fertig, aus welcher Spalte auch immer.
 
-Ein Track, der eine Review nicht besteht, wandert zurück nach `in progress` und
-behält seine Phase.
+Früher rückte eine bestandene Review die Phase vor und schickte den Track
+zurück nach `in progress`. Das setzte voraus, dass die Phase gepflegt wird und
+jede Review genau eine Phase abschließt. In der Praxis traf beides nicht zu —
+nach einem Import stehen fast alle Tracks in derselben Phase —, und die Regel
+kaperte die häufigste Geste: Wer eine Karte auf `done` zog, fand sie in
+`in progress` wieder.
 
 ### Release
 

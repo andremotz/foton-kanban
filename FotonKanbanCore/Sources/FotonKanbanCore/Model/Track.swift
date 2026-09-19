@@ -127,23 +127,19 @@ public struct Track: Hashable, Codable, Sendable, Identifiable {
 
     // MARK: - Zustandsübergänge
 
-    /// Zieht den Track in eine andere Spalte.
+    /// Zieht den Track in eine andere Spalte. `done` heißt fertig, aus welcher
+    /// Spalte auch immer.
     ///
-    /// Die einzige Automatik: Wandert ein Track aus `in review` nach `done`,
-    /// gilt die Review als bestanden. Vor dem Mastering rückt er dann in die
-    /// nächste Phase und geht zurück auf `in progress`; nach dem Mastering ist
-    /// er fertig und bleibt in `done`.
+    /// Früher rückte eine bestandene Review die Phase vor und schickte den
+    /// Track zurück nach `in progress`. Das setzte voraus, dass die Phase
+    /// gepflegt wird und jede Review genau eine Phase abschließt — in der
+    /// Praxis traf beides nicht zu, und die Regel kaperte die häufigste Geste.
+    /// Die Phase wird deshalb nur noch von Hand gesetzt.
     public mutating func move(to newStatus: Status, now: Date = Date()) {
         if newStatus == .review, status != .review {
             reviewRounds += 1
         }
-
-        if status == .review, newStatus == .done, let next = phase.next {
-            phase = next
-            status = .inProgress
-        } else {
-            status = newStatus
-        }
+        status = newStatus
         updated = now
     }
 
