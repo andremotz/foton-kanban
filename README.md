@@ -99,6 +99,13 @@ of a track count. Its tracks also drop out of the board's overall view so that
 only current work is listed there; a toolbar toggle brings them back, and
 selecting the release itself always shows it in full.
 
+## Working on several cards at once
+
+⌘-click adds a card to the selection, ⇧-click extends it within the column.
+Dragging or right-clicking a selected card then applies to all of them: move to
+the backlog, assign to a release, delete. Cards keep their relative order when
+moved together.
+
 ## Requirements
 
 - macOS 14 or newer

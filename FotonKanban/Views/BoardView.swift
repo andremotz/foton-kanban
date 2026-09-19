@@ -16,10 +16,13 @@ enum TrackDrag {
     /// Textdarstellung an, die sonst fälschlich als Karte gelesen würde.
     static let acceptedTypes: [UTType] = [.fileURL, .utf8PlainText, .text]
 
-    static func payload(_ id: String) -> String { prefix + id }
+    /// Mehrere IDs durch Komma getrennt: Wer eine Karte aus einer Auswahl
+    /// zieht, zieht die ganze Auswahl mit.
+    static func payload(_ ids: [String]) -> String { prefix + ids.joined(separator: ",") }
 
-    static func id(from text: String) -> String? {
-        text.hasPrefix(prefix) ? String(text.dropFirst(prefix.count)) : nil
+    static func ids(from text: String) -> [String] {
+        guard text.hasPrefix(prefix) else { return [] }
+        return text.dropFirst(prefix.count).split(separator: ",").map(String.init)
     }
 
     /// Verteilt die abgelegten Objekte. `audio` bleibt weg, wo Dateien nichts
@@ -27,7 +30,7 @@ enum TrackDrag {
     @MainActor
     static func handle(
         _ providers: [NSItemProvider],
-        move: @escaping @MainActor (String) -> Void,
+        move: @escaping @MainActor ([String]) -> Void,
         audio: (@MainActor (URL) -> Void)? = nil
     ) -> Bool {
         if let audio,
@@ -47,8 +50,10 @@ enum TrackDrag {
         guard let provider = providers.first(where: { $0.canLoadObject(ofClass: String.self) })
         else { return false }
         _ = provider.loadObject(ofClass: String.self) { text, _ in
-            guard let text, let id = id(from: text) else { return }
-            Task { @MainActor in move(id) }
+            guard let text else { return }
+            let moved = ids(from: text)
+            guard !moved.isEmpty else { return }
+            Task { @MainActor in move(moved) }
         }
         return true
     }
@@ -144,7 +149,7 @@ private struct ColumnView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(tracks) { track in
-                        TrackCardView(track: track, status: status)
+                        TrackCardView(track: track, status: status, columnIDs: tracks.map(\.id))
                     }
                     // Ablagefläche unterhalb der letzten Karte, damit ein Track
                     // ans Ende der Spalte gezogen werden kann.
@@ -165,8 +170,8 @@ private struct ColumnView: View {
         }
         .frame(minWidth: 170, maxWidth: .infinity)
         .onDrop(of: TrackDrag.acceptedTypes, isTargeted: $isTargeted) { providers in
-            TrackDrag.handle(providers) { id in
-                model.move(trackID: id, to: status)
+            TrackDrag.handle(providers) { ids in
+                model.move(trackIDs: ids, to: status)
             }
         }
     }
@@ -176,6 +181,18 @@ private struct TrackCardView: View {
     @Environment(BoardModel.self) private var model
     let track: Track
     let status: Status
+    /// Die Karten der eigenen Spalte in Anzeigereihenfolge — Grundlage für die
+    /// Auswahl mit gedrückter Umschalttaste.
+    let columnIDs: [String]
+
+    /// Gehört die Karte zur Auswahl, gelten Ziehen und Kontextmenü für alle.
+    private var affectsSelection: Bool {
+        model.selectedTrackIDs.count > 1 && model.selectedTrackIDs.contains(track.id)
+    }
+
+    private var draggedIDs: [String] {
+        affectsSelection ? model.selectedTracks.map(\.id) : [track.id]
+    }
 
     @State private var isTargeted = false
 
@@ -263,7 +280,8 @@ private struct TrackCardView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(
-                    model.selectedTrackID == track.id ? Color.accentColor : Color.primary.opacity(0.12)
+                    model.selectedTrackIDs.contains(track.id)
+                        ? Color.accentColor : Color.primary.opacity(0.12)
                 )
         }
         .overlay(alignment: .top) {
@@ -277,18 +295,42 @@ private struct TrackCardView: View {
             }
         }
         .contentShape(.rect)
-        .onTapGesture { model.selectedTrackID = track.id }
-        .draggable(TrackDrag.payload(track.id))
+        .onTapGesture {
+            // SwiftUI reicht die Zusatztasten beim Tippen nicht mit, deshalb
+            // der Blick auf den aktuellen Tastaturzustand.
+            let flags = NSEvent.modifierFlags
+            if flags.contains(.command) {
+                model.toggleSelection(track.id)
+            } else if flags.contains(.shift) {
+                model.extendSelection(to: track.id, within: columnIDs)
+            } else {
+                model.select(track.id)
+            }
+        }
+        .draggable(TrackDrag.payload(draggedIDs))
         .onDrop(of: TrackDrag.acceptedTypes, isTargeted: $isTargeted) { providers in
-            TrackDrag.handle(providers) { id in
-                guard id != track.id else { return }
-                model.move(trackID: id, to: status, before: track.id)
+            TrackDrag.handle(providers) { ids in
+                let others = ids.filter { $0 != track.id }
+                guard !others.isEmpty else { return }
+                model.move(trackIDs: others, to: status, before: track.id)
             } audio: { url in
                 model.setAudio(url, for: track.id)
             }
         }
         .contextMenu {
-            Button("Öffnen") { model.selectedTrackID = track.id }
+            if affectsSelection {
+                Section("\(model.selectedTrackIDs.count) Tracks") {
+                    Button("In den Backlog") { model.moveSelectionToBacklog() }
+                    Menu("Release zuweisen") {
+                        ForEach(model.repository.activeReleases) { release in
+                            Button(release.title) { model.assignSelection(to: release.id) }
+                        }
+                    }
+                    Button("Löschen", role: .destructive) { model.deleteSelection() }
+                }
+                Divider()
+            }
+            Button("Öffnen") { model.select(track.id) }
             if let bounce = model.bounces(for: track).first {
                 Button("Bounce anhören") { NSWorkspace.shared.open(bounce.url) }
                 Button("Im Finder zeigen") {

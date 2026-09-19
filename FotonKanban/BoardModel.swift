@@ -22,7 +22,9 @@ final class BoardModel {
     var showsReleasedTracks: Bool = UserDefaults.standard.bool(forKey: "showsReleasedTracks") {
         didSet { UserDefaults.standard.set(showsReleasedTracks, forKey: "showsReleasedTracks") }
     }
-    var selectedTrackID: String?
+    /// Mehrfachauswahl. Ein einzelner Track ist der Normalfall, deshalb gibt
+    /// es `selectedTrack` weiterhin — es liefert nur bei genau einem etwas.
+    var selectedTrackIDs: Set<String> = []
     var searchText = ""
 
     /// Zu jedem Track die gefundenen Fassungen, einmal beim Laden aufgelöst.
@@ -39,7 +41,58 @@ final class BoardModel {
     private var pendingSaves: [String: Task<Void, Never>] = [:]
 
     var selectedTrack: Track? {
-        selectedTrackID.flatMap { id in repository.tracks.first { $0.id == id } }
+        guard selectedTrackIDs.count == 1, let id = selectedTrackIDs.first else { return nil }
+        return repository.tracks.first { $0.id == id }
+    }
+
+    /// Die ausgewählten Tracks in Boardreihenfolge — Spalte, dann Priorität.
+    var selectedTracks: [Track] {
+        repository.tracks
+            .filter { selectedTrackIDs.contains($0.id) }
+            .sorted { ($0.status, $0.order) < ($1.status, $1.order) }
+    }
+
+    // MARK: - Auswahl
+
+    func select(_ id: String) { selectedTrackIDs = [id] }
+
+    func toggleSelection(_ id: String) {
+        if selectedTrackIDs.contains(id) {
+            selectedTrackIDs.remove(id)
+        } else {
+            selectedTrackIDs.insert(id)
+        }
+    }
+
+    /// Auswahl bis zur angeklickten Karte erweitern. `column` ist die
+    /// Reihenfolge, wie sie gerade zu sehen ist — über Spaltengrenzen hinweg
+    /// zu greifen wäre schwer vorhersagbar.
+    func extendSelection(to id: String, within column: [String]) {
+        guard let end = column.firstIndex(of: id) else { return }
+        guard let anchor = column.firstIndex(where: { selectedTrackIDs.contains($0) }) else {
+            selectedTrackIDs = [id]
+            return
+        }
+        let range = anchor <= end ? anchor...end : end...anchor
+        selectedTrackIDs.formUnion(column[range])
+    }
+
+    /// Nimmt allen ausgewählten Tracks das Release. Sie landen damit im
+    /// Backlog, ohne dass das Release selbst verschwindet.
+    func moveSelectionToBacklog() {
+        for track in selectedTracks where track.release != nil {
+            setRelease(nil, for: track.id)
+        }
+    }
+
+    func assignSelection(to releaseID: String?) {
+        for track in selectedTracks where track.release != releaseID {
+            setRelease(releaseID, for: track.id)
+        }
+    }
+
+    func deleteSelection() {
+        for id in selectedTracks.map(\.id) { delete(trackID: id) }
     }
 
     // MARK: - Ordner
@@ -202,7 +255,7 @@ final class BoardModel {
         do {
             try write { try store.save(track) }
             repository.tracks.append(track)
-            selectedTrackID = track.id
+            selectedTrackIDs = [track.id]
             return track
         } catch {
             errorMessage = "Track konnte nicht angelegt werden: \(error.localizedDescription)"
@@ -247,7 +300,7 @@ final class BoardModel {
         do {
             try write { try store.delete(trackID: trackID) }
             repository.tracks.removeAll { $0.id == trackID }
-            if selectedTrackID == trackID { selectedTrackID = nil }
+            selectedTrackIDs.remove(trackID)
         } catch {
             errorMessage = "Track konnte nicht gelöscht werden: \(error.localizedDescription)"
         }
@@ -280,6 +333,50 @@ final class BoardModel {
                 if renumbered.id == trackID { track = renumbered } else { update(renumbered) }
             }
             update(track)
+        }
+    }
+
+    /// Verschiebt mehrere Tracks gemeinsam in eine Spalte.
+    ///
+    /// Die Zielspalte wird danach durchnummeriert, statt Lücken zu suchen: Für
+    /// eine Gruppe reicht der Platz zwischen zwei Nachbarn selten, und eine
+    /// Spalte hat höchstens ein paar Dutzend Karten. Geschrieben werden nur die
+    /// Dateien, deren Wert sich wirklich ändert.
+    func move(trackIDs: [String], to status: Status, before: String? = nil) {
+        guard trackIDs.count > 1 else {
+            if let single = trackIDs.first { move(trackID: single, to: status, before: before) }
+            return
+        }
+
+        let moving = repository.tracks
+            .filter { trackIDs.contains($0.id) }
+            .sorted { ($0.status, $0.order) < ($1.status, $1.order) }
+        guard !moving.isEmpty else { return }
+
+        var updated: [Track] = []
+        for var track in moving {
+            track.move(to: status)
+            updated.append(track)
+        }
+        // `move` kann die Phase weiterrücken und dabei die Spalte wechseln;
+        // maßgeblich ist, wo die Tracks tatsächlich landen.
+        let destination = updated[0].status
+        let inDestination = updated.filter { $0.status == destination }
+        let elsewhere = updated.filter { $0.status != destination }
+
+        var column = repository.tracks(in: destination).filter { !trackIDs.contains($0.id) }
+        let index = before.flatMap { id in column.firstIndex { $0.id == id } } ?? column.count
+        column.insert(contentsOf: inDestination, at: index)
+
+        var byID = Dictionary(uniqueKeysWithValues: column.map { ($0.id, $0) })
+        for renumbered in Ordering.renumber(column) { byID[renumbered.id] = renumbered }
+
+        for track in inDestination { update(byID[track.id] ?? track) }
+        for track in elsewhere { update(track) }
+        for track in column where !trackIDs.contains(track.id) {
+            if let renumbered = byID[track.id], renumbered.order != track.order {
+                update(renumbered)
+            }
         }
     }
 
@@ -324,9 +421,15 @@ final class BoardModel {
     }
 
     /// Setzt ein Release auf veröffentlicht oder nimmt das zurück.
-    func toggleReleased(_ releaseID: String) {
-        guard var release = repository.releases.first(where: { $0.id == releaseID }) else { return }
-        release.state = release.state == .released ? .inProgress : .released
+    ///
+    /// Nimmt den Zielzustand entgegen, statt blind zu kippen: Ein Umschalter,
+    /// der den eingehenden Wert ignoriert, dreht sich bei jedem unbeabsichtigten
+    /// Schreibzugriff um.
+    func setReleased(_ isReleased: Bool, for releaseID: String) {
+        guard var release = repository.releases.first(where: { $0.id == releaseID }),
+            (release.state == .released) != isReleased
+        else { return }
+        release.state = isReleased ? .released : .inProgress
         release.updated = Date()
         update(release)
     }

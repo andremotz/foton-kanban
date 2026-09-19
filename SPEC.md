@@ -202,6 +202,21 @@ einer Spalte; auf eine Karte gezogen, landet die gezogene davor und bekommt
 damit die höhere Priorität. Filterleiste: Release, Tag, Freitextsuche. Karte
 zeigt Titel, Phase, Checklisten-Fortschritt, Rundenzahl und Release.
 
+### Mehrfachauswahl
+
+Karten lassen sich mit ⌘ einzeln hinzunehmen und mit ⇧ bis zur angeklickten
+Karte erweitern — letzteres innerhalb einer Spalte, weil eine Spanne über
+Spaltengrenzen hinweg schwer vorhersagbar wäre.
+
+Gehört eine Karte zur Auswahl, gelten Ziehen und Kontextmenü für alle
+ausgewählten. Gemeinsam möglich sind: in den Backlog verschieben, einem Release
+zuweisen, löschen. Beim Verschieben behalten die Karten ihre relative
+Reihenfolge, und die Zielspalte wird anschließend durchnummeriert — für eine
+Gruppe reicht der Platz zwischen zwei Nachbarn selten.
+
+Statt des Inspectors erscheint bei mehreren ausgewählten Karten ein Panel mit
+dem, was gemeinsam gilt und gemeinsam geht.
+
 ### Track-Inspector
 Seitenpanel: Titel, Phase, Spalte, Release-Zuordnung, Tags, Notizen,
 Abhör-Checkliste mit Zurücksetzen.

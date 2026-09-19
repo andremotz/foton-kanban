@@ -232,3 +232,68 @@ private struct BounceRow: View {
         .padding(.vertical, 1)
     }
 }
+
+
+/// Was bei mehreren ausgewählten Karten statt des Inspectors erscheint.
+/// Einzelfelder wie Titel oder Notizen ergäben hier keinen Sinn — gezeigt wird,
+/// was gemeinsam gilt, und angeboten wird, was gemeinsam geht.
+struct MultiSelectionPanel: View {
+    @Environment(BoardModel.self) private var model
+
+    private var tracks: [Track] { model.selectedTracks }
+
+    /// Das gemeinsame Release, falls alle dasselbe haben.
+    private var sharedRelease: String?? {
+        let releases = Set(tracks.map(\.release))
+        return releases.count == 1 ? releases.first : nil
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Ausgewählt", value: "\(tracks.count) Tracks")
+                if let shared = sharedRelease {
+                    LabeledContent(
+                        "Release",
+                        value: shared.flatMap { model.repository.release($0)?.title } ?? "Backlog"
+                    )
+                } else {
+                    LabeledContent("Release", value: "gemischt")
+                }
+            }
+
+            Section("Gemeinsam ändern") {
+                Button("In den Backlog") { model.moveSelectionToBacklog() }
+                Picker("Release zuweisen", selection: Binding<String?>(
+                    get: { nil },
+                    set: { if let id = $0 { model.assignSelection(to: id) } }
+                )) {
+                    Text("wählen…").tag(String?.none)
+                    ForEach(model.repository.activeReleases) { release in
+                        Text(release.title).tag(String?.some(release.id))
+                    }
+                }
+            }
+
+            Section("Auswahl") {
+                ForEach(tracks) { track in
+                    HStack {
+                        Text(track.title).lineLimit(1)
+                        Spacer()
+                        Text(track.status.title)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Section {
+                Button("Auswahl aufheben") { model.selectedTrackIDs = [] }
+                Button("\(tracks.count) Tracks löschen", role: .destructive) {
+                    model.deleteSelection()
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+}

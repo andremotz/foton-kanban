@@ -35,6 +35,10 @@ struct RootView: View {
                             resizeHandle
                             TrackInspector(track: track)
                                 .frame(width: inspectorWidth)
+                        } else if model.selectedTrackIDs.count > 1 {
+                            resizeHandle
+                            MultiSelectionPanel()
+                                .frame(width: inspectorWidth)
                         }
                     }
                 }            }
@@ -185,7 +189,7 @@ struct SidebarView: View {
         .contextMenu {
             Toggle("Veröffentlicht", isOn: Binding(
                 get: { isReleased },
-                set: { _ in model.toggleReleased(release.id) }
+                set: { model.setReleased($0, for: release.id) }
             ))
         }
     }
