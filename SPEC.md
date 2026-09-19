@@ -52,6 +52,17 @@ Zustände: `planned` → `in progress` → `released`.
 Ein Track **kann** ohne Release existieren (Backlog-Pool: Ideen, angefangene
 Sachen, Tracks die es nicht ins letzte Release geschafft haben).
 
+### Zwei Namen
+
+Ein Track trägt den **Arbeitsnamen** (`title`), unter dem die Bounces liegen,
+und optional einen abweichenden **Veröffentlichungsnamen** (`release-title`).
+Im Studio heißt ein Projekt oft anders als später auf der Platte.
+
+Beide Namen zählen bei der Suche und beim Zuordnen der Bounces — ältere
+Dateien tragen den Arbeitsnamen, spätere womöglich schon den neuen. Auf der
+Karte stehen beide nebeneinander, der Veröffentlichungsname farblich
+abgesetzt. Fehlt er, erscheint nur der Arbeitsname.
+
 ### Abhör-Checkliste
 
 Jeder Track hat eine Checkliste der Abhörsituationen mit Häkchen und Notiz pro
@@ -113,6 +124,7 @@ FotonKanban/                     ← Git-Repo, Ort frei wählbar
 ---
 id: k3f9
 title: Ferrite
+release-title: Apollo Pad
 phase: mastering
 status: review
 release: r-2026-09

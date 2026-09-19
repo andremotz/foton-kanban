@@ -15,7 +15,7 @@ public enum MarkdownCodec {
     // MARK: - Track
 
     private static let trackKeys: Set<String> = [
-        "id", "title", "phase", "status", "release", "order", "review-rounds",
+        "id", "title", "release-title", "phase", "status", "release", "order", "review-rounds",
         "created", "updated", "tags", "audio",
     ]
 
@@ -33,6 +33,7 @@ public enum MarkdownCodec {
         return Track(
             id: id,
             title: front.nonEmptyString("title") ?? id,
+            releaseTitle: front.nonEmptyString("release-title"),
             phase: phase,
             status: status,
             release: front.nonEmptyString("release"),
@@ -53,6 +54,7 @@ public enum MarkdownCodec {
         var front = Frontmatter()
         front.set("id", track.id)
         front.set("title", track.title)
+        front.set("release-title", track.releaseTitle)
         front.set("phase", track.phase.rawValue)
         front.set("status", track.status.rawValue)
         front.set("release", track.release)

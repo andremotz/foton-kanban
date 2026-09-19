@@ -3,7 +3,12 @@ import Foundation
 /// Ein Song — die Arbeitseinheit des Boards.
 public struct Track: Hashable, Codable, Sendable, Identifiable {
     public var id: String
+    /// Der Arbeitsname. Unter ihm liegen die Bounces und nach ihm wird gesucht.
     public var title: String
+    /// Der Name, unter dem der Track veröffentlicht wird, falls er vom
+    /// Arbeitsnamen abweicht. Ein Projekt heißt im Studio oft anders als auf
+    /// der Platte.
+    public var releaseTitle: String?
     /// Woran gerade gearbeitet wird. Wird über die Review weitergerückt oder
     /// im Inspector von Hand gesetzt.
     public var phase: Phase
@@ -36,6 +41,7 @@ public struct Track: Hashable, Codable, Sendable, Identifiable {
     public init(
         id: String,
         title: String,
+        releaseTitle: String? = nil,
         phase: Phase = .jamSession,
         status: Status = .open,
         release: String? = nil,
@@ -52,6 +58,7 @@ public struct Track: Hashable, Codable, Sendable, Identifiable {
     ) {
         self.id = id
         self.title = title
+        self.releaseTitle = releaseTitle
         self.phase = phase
         self.status = status
         self.release = release
@@ -65,6 +72,15 @@ public struct Track: Hashable, Codable, Sendable, Identifiable {
         self.audio = audio
         self.unknownFrontmatter = unknownFrontmatter
         self.extraSections = extraSections
+    }
+
+    /// Arbeitsname und, falls vorhanden, Veröffentlichungsname. Beide zählen
+    /// bei der Suche und beim Zuordnen der Bounces — je nachdem, unter welchem
+    /// Namen gerade gebounct wurde.
+    public var names: [String] {
+        var result = [title]
+        if let releaseTitle, !releaseTitle.isEmpty { result.append(releaseTitle) }
+        return result
     }
 
     /// Fertig ist ein Track, wenn er in der done-Spalte liegt. Dorthin kommt er

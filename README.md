@@ -83,6 +83,14 @@ Where the name is too different, drag the audio file from Finder onto the card.
 That writes an `audio:` entry into the track file which then takes precedence;
 "Zuordnung lösen" in the inspector removes it again.
 
+## Two names per track
+
+A track carries a working title and, optionally, a different release title —
+studio projects are often named one thing during production and another on the
+record. Both names count for search and for matching bounces, since older files
+carry the working name and later ones may already carry the new one. Cards show
+both side by side.
+
 ## Requirements
 
 - macOS 14 or newer
@@ -116,6 +124,7 @@ break the link.
 ---
 id: k3f9
 title: Ferrite
+release-title: Apollo Pad
 phase: mastering
 status: review
 release: r-2026-09

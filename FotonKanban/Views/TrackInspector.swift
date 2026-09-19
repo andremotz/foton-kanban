@@ -26,6 +26,17 @@ struct TrackInspector: View {
                     .textFieldStyle(.plain)
                     .labelsHidden()
 
+                // Leer lassen heißt: Der Track erscheint unter seinem
+                // Arbeitsnamen. Deshalb wird ein leeres Feld zu nil.
+                TextField(
+                    "Release-Titel",
+                    text: Binding(
+                        get: { draft.releaseTitle ?? "" },
+                        set: { draft.releaseTitle = $0.isEmpty ? nil : $0 }
+                    ),
+                    prompt: Text("wie der Arbeitstitel")
+                )
+
                 Picker("Phase", selection: phaseBinding) {
                     ForEach(Phase.allCases, id: \.self) { Text($0.title).tag($0) }
                 }

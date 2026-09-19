@@ -159,9 +159,19 @@ private struct TrackCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(track.title)
-                .font(.callout)
-                .lineLimit(2)
+            // Arbeitsname und Veröffentlichungsname in einem Absatz, damit
+            // sie zusammen umbrechen statt sich zwei Zeilen zu teilen.
+            Group {
+                if let released = track.releaseTitle, !released.isEmpty {
+                    Text(track.title)
+                        + Text("  ")
+                        + Text(released).foregroundStyle(Color.accentColor)
+                } else {
+                    Text(track.title)
+                }
+            }
+            .font(.callout)
+            .lineLimit(3)
 
             HStack(spacing: 6) {
                 Text(track.phase.title)

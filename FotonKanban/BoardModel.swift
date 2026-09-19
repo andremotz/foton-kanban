@@ -102,7 +102,16 @@ final class BoardModel {
         let index = BounceIndex(root: root)
         var resolved: [String: [Bounce]] = [:]
         for track in repository.tracks {
-            var list = index.bounces(matching: track.title)
+            // Unter beiden Namen suchen: Bounces vor der Umbenennung tragen
+            // den Arbeitsnamen, spätere womöglich schon den Release-Titel.
+            var list: [Bounce] = []
+            for name in track.names {
+                for bounce in index.bounces(matching: name)
+                where !list.contains(where: { $0.url == bounce.url }) {
+                    list.append(bounce)
+                }
+            }
+            list.sort { $0.date > $1.date }
             // Eine von Hand zugewiesene Datei steht vorn und ersetzt den
             // automatischen Fund an dieser Stelle.
             if let pinned = pinnedBounce(for: track) {
@@ -355,7 +364,7 @@ final class BoardModel {
 
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return true }
-        return track.title.localizedCaseInsensitiveContains(query)
+        return track.names.contains { $0.localizedCaseInsensitiveContains(query) }
             || track.tags.contains { $0.localizedCaseInsensitiveContains(query) }
             || track.notes.localizedCaseInsensitiveContains(query)
     }

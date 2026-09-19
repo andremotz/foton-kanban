@@ -128,6 +128,29 @@ struct MarkdownCodecTests {
         #expect(encoded.contains("Zu wenig Luft in den Höhen."))
     }
 
+    @Test("Der Release-Titel überlebt den Roundtrip und zählt als zweiter Name")
+    func keepsReleaseTitle() throws {
+        let markdown = """
+            ---
+            id: gg12
+            title: Groovin in G Remix
+            release-title: Apollo Pad
+            ---
+            """
+        let track = try MarkdownCodec.decodeTrack(markdown, fallbackID: "x")
+        #expect(track.releaseTitle == "Apollo Pad")
+        #expect(track.names == ["Groovin in G Remix", "Apollo Pad"])
+        #expect(MarkdownCodec.encode(track).contains("release-title: Apollo Pad"))
+    }
+
+    @Test("Ohne Release-Titel bleibt die Zeile weg und es gibt nur einen Namen")
+    func omitsEmptyReleaseTitle() throws {
+        let track = Track(id: "gg12", title: "Groovin in G Remix")
+        let encoded = MarkdownCodec.encode(track)
+        #expect(!encoded.contains("release-title"))
+        #expect(track.names == ["Groovin in G Remix"])
+    }
+
     @Test("Titel mit Doppelpunkt wird zitiert und wieder korrekt gelesen")
     func quotesAmbiguousScalars() throws {
         let track = Track(id: "bb22", title: "Ferrite: Reprise", notes: "")
