@@ -96,6 +96,10 @@ struct RootView: View {
 struct SidebarView: View {
     @Environment(BoardModel.self) private var model
 
+    /// Zustand des Archiv-Abschnitts. Gehört zum Arbeitsplatz, nicht zum
+    /// Board — sonst wanderte er über die Cloud auf die anderen Rechner.
+    @AppStorage("showsReleasedSection") private var showsReleasedSection = false
+
     var body: some View {
         @Bindable var model = model
 
@@ -119,17 +123,24 @@ struct SidebarView: View {
                 }
                 .tag(SidebarItem.backlog)
 
-                ForEach(model.repository.scheduledReleases) { release in
-                    Label {
-                        HStack {
-                            Text(release.title)
-                            Spacer()
-                            count(model.repository.tracks(inRelease: release.id).count)
-                        }
-                    } icon: {
-                        Image(systemName: icon(for: release.state))
+                ForEach(model.repository.activeReleases) { release in
+                    row(for: release)
+                }
+            }
+
+            // Das Archiv wächst mit jeder EP und wird selten gebraucht —
+            // deshalb zugeklappt und unten.
+            if !model.repository.releasedReleases.isEmpty {
+                Section(isExpanded: $showsReleasedSection) {
+                    ForEach(model.repository.releasedReleases) { release in
+                        row(for: release)
                     }
-                    .tag(SidebarItem.release(release.id))
+                } header: {
+                    HStack {
+                        Text("Veröffentlicht")
+                        Spacer()
+                        count(model.repository.releasedReleases.count)
+                    }
                 }
             }
         }
@@ -148,6 +159,45 @@ struct SidebarView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private func row(for release: Release) -> some View {
+        let isReleased = release.state == .released
+        Label {
+            HStack {
+                Text(release.title)
+                Spacer()
+                // Bei einer erschienenen EP sagt die Trackzahl nichts mehr —
+                // wann sie herauskam, schon. Ohne Termin bleibt die Zahl.
+                if isReleased, let target = release.target {
+                    Text(Self.monthYear.string(from: target))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    count(model.repository.tracks(inRelease: release.id).count)
+                }
+            }
+        } icon: {
+            Image(systemName: icon(for: release.state))
+        }
+        .foregroundStyle(isReleased ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+        .tag(SidebarItem.release(release.id))
+        .contextMenu {
+            Toggle("Veröffentlicht", isOn: Binding(
+                get: { isReleased },
+                set: { _ in model.toggleReleased(release.id) }
+            ))
+        }
+    }
+
+    /// Fest deutsch, wie die Monatsnamen in der Jahresplanung — die übrige
+    /// Beschriftung ist es auch, selbst wenn das System auf Englisch läuft.
+    private static let monthYear: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.setLocalizedDateFormatFromTemplate("MMM yyyy")
+        return formatter
+    }()
 
     private func count(_ value: Int) -> some View {
         Text(value, format: .number)

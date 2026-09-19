@@ -54,6 +54,30 @@ public struct Repository: Sendable, Equatable {
         }
     }
 
+    /// Releases, an denen noch gearbeitet wird — nach Termin, undatierte ans
+    /// Ende.
+    public var activeReleases: [Release] {
+        scheduledReleases.filter { $0.state != .released }
+    }
+
+    /// Veröffentlichte Releases, das jüngste zuerst: Was zuletzt erschien, ist
+    /// das, wonach man am ehesten sucht.
+    public var releasedReleases: [Release] {
+        releases.filter { $0.state == .released }
+            .sorted { lhs, rhs in
+                switch (lhs.target, rhs.target) {
+                case (let l?, let r?): l > r
+                case (_?, nil): true
+                case (nil, _?): false
+                case (nil, nil): lhs.title < rhs.title
+                }
+            }
+    }
+
+    public var releasedReleaseIDs: Set<String> {
+        Set(releases.filter { $0.state == .released }.map(\.id))
+    }
+
     public var trackIDs: Set<String> { Set(tracks.map(\.id)) }
     public var releaseIDs: Set<String> { Set(releases.map(\.id)) }
 }

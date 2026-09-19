@@ -49,6 +49,19 @@ Releases verschiebbar, ohne dass eine Datei den Ordner wechselt.
 
 Zustände: `planned` → `in progress` → `released`.
 
+Veröffentlichte Releases wandern in der Seitenleiste in einen eigenen,
+zugeklappten Abschnitt — das Archiv wächst mit jeder EP und wird selten
+gebraucht. Dort steht das Erscheinungsdatum statt der Trackzahl, die nach der
+Veröffentlichung nichts mehr aussagt. Markiert wird über das Kontextmenü des
+Eintrags.
+
+Ihre Tracks fallen zugleich aus der Gesamtansicht des Boards heraus, damit dort
+nur steht, woran gearbeitet wird. Ein Schalter in der Werkzeugleiste blendet
+sie wieder ein, und wer das Release ausdrücklich anwählt, sieht es ohnehin
+vollständig. Ob der Abschnitt aufgeklappt und ob eingeblendet ist, merkt sich
+der Rechner — beides sind Ansichtssachen und gehören nicht in die Dateien, die
+zwischen den Macs wandern.
+
 Ein Track **kann** ohne Release existieren (Backlog-Pool: Ideen, angefangene
 Sachen, Tracks die es nicht ins letzte Release geschafft haben).
 

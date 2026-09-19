@@ -17,6 +17,11 @@ final class BoardModel {
     private(set) var errorMessage: String?
 
     var sidebarSelection: SidebarItem? = .allTracks
+    /// Ob die Board-Ansicht auch Tracks veröffentlichter Releases zeigt.
+    /// Eine Ansichtssache des Arbeitsplatzes, deshalb nicht im Board.
+    var showsReleasedTracks: Bool = UserDefaults.standard.bool(forKey: "showsReleasedTracks") {
+        didSet { UserDefaults.standard.set(showsReleasedTracks, forKey: "showsReleasedTracks") }
+    }
     var selectedTrackID: String?
     var searchText = ""
 
@@ -318,6 +323,14 @@ final class BoardModel {
         }
     }
 
+    /// Setzt ein Release auf veröffentlicht oder nimmt das zurück.
+    func toggleReleased(_ releaseID: String) {
+        guard var release = repository.releases.first(where: { $0.id == releaseID }) else { return }
+        release.state = release.state == .released ? .inProgress : .released
+        release.updated = Date()
+        update(release)
+    }
+
     func update(_ release: Release) {
         guard let store else { return }
         if let index = repository.releases.firstIndex(where: { $0.id == release.id }) {
@@ -359,6 +372,14 @@ final class BoardModel {
         switch sidebarSelection {
         case .backlog where track.release != nil: return false
         case .release(let id) where track.release != id: return false
+        case .allTracks:
+            // In der Gesamtansicht zählt, woran gerade gearbeitet wird. Wer ein
+            // veröffentlichtes Release ausdrücklich anwählt, sieht es weiterhin
+            // vollständig — der Filter greift nur hier.
+            if !showsReleasedTracks, let release = track.release,
+                repository.releasedReleaseIDs.contains(release) {
+                return false
+            }
         default: break
         }
 

@@ -91,6 +91,14 @@ record. Both names count for search and for matching bounces, since older files
 carry the working name and later ones may already carry the new one. Cards show
 both side by side.
 
+## Released records get out of the way
+
+Marking a release as released — from the context menu in the sidebar — moves it
+into its own collapsed section at the bottom, showing its release month instead
+of a track count. Its tracks also drop out of the board's overall view so that
+only current work is listed there; a toolbar toggle brings them back, and
+selecting the release itself always shows it in full.
+
 ## Requirements
 
 - macOS 14 or newer

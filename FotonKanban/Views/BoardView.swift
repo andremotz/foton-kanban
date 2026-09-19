@@ -71,6 +71,28 @@ struct BoardView: View {
         .navigationTitle(title)
         .searchable(text: $model.searchText, placement: .toolbar, prompt: "Tracks durchsuchen")
         .toolbar {
+            // Nur in der Gesamtansicht wird etwas ausgeblendet, und nur wenn
+            // es überhaupt ein veröffentlichtes Release gibt.
+            if model.sidebarSelection == .allTracks,
+                !model.repository.releasedReleases.isEmpty {
+                ToolbarItem(placement: .automatic) {
+                    Toggle(isOn: Binding(
+                        get: { model.showsReleasedTracks },
+                        set: { model.showsReleasedTracks = $0 }
+                    )) {
+                        Label(
+                            "Veröffentlichte einblenden",
+                            systemImage: model.showsReleasedTracks ? "eye" : "eye.slash"
+                        )
+                    }
+                    .help(
+                        model.showsReleasedTracks
+                            ? "Tracks veröffentlichter Releases ausblenden"
+                            : "Tracks veröffentlichter Releases einblenden"
+                    )
+                }
+            }
+
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     model.createTrack(release: currentRelease)

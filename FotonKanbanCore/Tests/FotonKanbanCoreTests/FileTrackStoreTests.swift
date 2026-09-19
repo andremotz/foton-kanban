@@ -162,6 +162,25 @@ struct FileTrackStoreTests {
         }
     }
 
+    @Test("Aktive und veröffentlichte Releases werden getrennt und gegenläufig sortiert")
+    func splitsReleasesByState() {
+        let repository = Repository(releases: [
+            Release(id: "a", title: "Aktiv spät", target: DateFormatting.day(from: "2026-12-01")),
+            Release(id: "b", title: "Aktiv früh", target: DateFormatting.day(from: "2026-03-01")),
+            Release(id: "c", title: "Aktiv ohne Termin"),
+            Release(id: "d", title: "Alt", target: DateFormatting.day(from: "2025-02-01"),
+                    state: .released),
+            Release(id: "e", title: "Jünger", target: DateFormatting.day(from: "2025-11-01"),
+                    state: .released),
+        ])
+
+        // Aktive: nächster Termin zuerst, undatierte ans Ende.
+        #expect(repository.activeReleases.map(\.id) == ["b", "a", "c"])
+        // Veröffentlichte umgekehrt: zuletzt erschienen zuerst.
+        #expect(repository.releasedReleases.map(\.id) == ["e", "d"])
+        #expect(repository.releasedReleaseIDs == ["d", "e"])
+    }
+
     @Test("Repository-Abfragen für Board, Backlog und Termine")
     func repositoryQueries() throws {
         let repository = Repository(
