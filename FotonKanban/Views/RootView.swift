@@ -17,7 +17,14 @@ struct RootView: View {
                 } detail: {
                     detail
                 }
-                .inspector(isPresented: .constant(model.selectedTrack != nil)) {
+                // Ein echtes Binding statt `.constant`: Der Inspector muss
+                // zurückschreiben können, sonst weicht SwiftUIs interner
+                // Zustand vom gemeldeten ab. Nebenbei lässt er sich damit
+                // überhaupt erst zuklappen.
+                .inspector(isPresented: Binding(
+                    get: { model.selectedTrack != nil },
+                    set: { if !$0 { model.selectedTrackID = nil } }
+                )) {
                     if let track = model.selectedTrack {
                         TrackInspector(track: track)
                             .inspectorColumnWidth(min: 250, ideal: 300, max: 460)

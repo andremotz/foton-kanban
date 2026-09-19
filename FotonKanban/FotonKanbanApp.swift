@@ -5,6 +5,10 @@ import SwiftUI
 struct FotonKanbanApp: App {
     @State private var model = BoardModel()
 
+    init() {
+        CrashLog.start()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
