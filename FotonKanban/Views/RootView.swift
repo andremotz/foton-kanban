@@ -15,22 +15,21 @@ struct RootView: View {
                     SidebarView()
                         .navigationSplitViewColumnWidth(min: 180, ideal: 210)
                 } detail: {
-                    detail
-                }
-                // Ein echtes Binding statt `.constant`: Der Inspector muss
-                // zurückschreiben können, sonst weicht SwiftUIs interner
-                // Zustand vom gemeldeten ab. Nebenbei lässt er sich damit
-                // überhaupt erst zuklappen.
-                .inspector(isPresented: Binding(
-                    get: { model.selectedTrack != nil },
-                    set: { if !$0 { model.selectedTrackID = nil } }
-                )) {
-                    if let track = model.selectedTrack {
-                        TrackInspector(track: track)
-                            .inspectorColumnWidth(min: 250, ideal: 300, max: 460)
+                    // Eigenes Seitenpanel statt `.inspector`: Unter macOS 27
+                    // invalidiert dessen Hostansicht ihr Layout während des
+                    // Constraint-Durchlaufs und löst damit eine Endlosschleife
+                    // aus, die das Fenster mit einer Ausnahme beendet.
+                    // Nachgewiesen durch Ein- und Ausbauen: mit `.inspector`
+                    // drei von drei Läufen abgestürzt, ohne null von drei.
+                    HStack(spacing: 0) {
+                        detail
+                        if let track = model.selectedTrack {
+                            Divider()
+                            TrackInspector(track: track)
+                                .frame(width: 320)
+                        }
                     }
-                }
-            }
+                }            }
         }
         .alert(
             "Fehler",
