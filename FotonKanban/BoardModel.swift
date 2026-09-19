@@ -73,7 +73,13 @@ final class BoardModel {
     func reload() {
         guard let store else { return }
         do {
-            repository = try store.load()
+            // Nur zuweisen, wenn sich tatsächlich etwas geändert hat. Der
+            // Board-Ordner liegt in der Regel in einer Cloud, und jede
+            // Sync-Regung meldet der Watcher. Eine bedingungslose Zuweisung
+            // ersetzt das gesamte Repository und zeichnet Board samt Inspector
+            // neu — bei ruhendem Inhalt völlig umsonst.
+            let loaded = try store.load()
+            if loaded != repository { repository = loaded }
             errorMessage = nil
             indexBounces()
         } catch {
@@ -105,7 +111,7 @@ final class BoardModel {
             }
             if !list.isEmpty { resolved[track.id] = list }
         }
-        bouncesByTrack = resolved
+        if resolved != bouncesByTrack { bouncesByTrack = resolved }
 
         if previewsWatcher == nil {
             previewsWatcher = FolderWatcher(url: root) { [weak self] in

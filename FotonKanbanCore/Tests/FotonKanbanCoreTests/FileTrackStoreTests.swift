@@ -131,6 +131,37 @@ struct FileTrackStoreTests {
         }
     }
 
+    /// Die App lädt nur neu, wenn sich etwas geändert hat. Das hängt daran,
+    /// dass zwei Ladevorgänge desselben Ordners gleich sind — sonst greift die
+    /// Sperre nie und jede Sync-Regung zeichnet das Board neu.
+    @Test("Zweimal laden ergibt dasselbe Repository")
+    func loadingTwiceIsEqual() throws {
+        try withTemporaryStore { store, root in
+            _ = try store.load()
+            var track = Track(id: "k3f9", title: "Ferrite", phase: .mastering, release: "r-1")
+            track.reconcileChecks(with: .default)
+            track.checks[0].isChecked = true
+            track.checks[0].note = "ok"
+            track.notes = "Bassline zu dominant."
+            // Unbekanntes Frontmatter und ein fremder Abschnitt: beides muss
+            // über zwei Ladevorgänge hinweg stabil bleiben.
+            track.unknownFrontmatter["bpm"] = .scalar("128")
+            track.extraSections = [BodySection(heading: "Referenzen", content: "Mix von 2024")]
+            try store.save(track)
+            try store.save(Release(id: "r-1", title: "EP 04"))
+
+            let first = try store.load()
+            let second = try store.load()
+            #expect(first == second)
+
+            // Und eine echte Änderung muss weiterhin auffallen.
+            var changed = try #require(second.tracks.first)
+            changed.title = "Anders"
+            try store.save(changed)
+            #expect(try store.load() != second)
+        }
+    }
+
     @Test("Repository-Abfragen für Board, Backlog und Termine")
     func repositoryQueries() throws {
         let repository = Repository(

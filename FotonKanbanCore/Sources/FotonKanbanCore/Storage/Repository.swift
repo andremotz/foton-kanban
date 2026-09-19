@@ -1,7 +1,7 @@
 import Foundation
 
 /// Der vollständige Inhalt eines Board-Ordners.
-public struct Repository: Sendable {
+public struct Repository: Sendable, Equatable {
     public var tracks: [Track]
     public var releases: [Release]
     public var config: Config
