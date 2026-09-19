@@ -1,8 +1,16 @@
+import AppKit
 import FotonKanbanCore
 import SwiftUI
 
 struct RootView: View {
     @Environment(BoardModel.self) private var model
+
+    /// Breite des Seitenpanels. Eine Einstellung des Arbeitsplatzes, kein
+    /// Boardinhalt — sie hängt am Bildschirm und gehört deshalb nicht in die
+    /// Dateien, die zwischen den Rechnern synchronisiert werden.
+    @AppStorage("inspectorWidth") private var inspectorWidth = 320.0
+    /// Breite zu Beginn der Ziehbewegung; `translation` zählt von dort.
+    @State private var widthAtDragStart: Double?
 
     var body: some View {
         @Bindable var model = model
@@ -24,9 +32,9 @@ struct RootView: View {
                     HStack(spacing: 0) {
                         detail
                         if let track = model.selectedTrack {
-                            Divider()
+                            resizeHandle
                             TrackInspector(track: track)
-                                .frame(width: 320)
+                                .frame(width: inspectorWidth)
                         }
                     }
                 }            }
@@ -42,6 +50,36 @@ struct RootView: View {
         } message: {
             Text(model.errorMessage ?? "")
         }
+    }
+
+    /// Die Trennlinie mit einem breiteren, unsichtbaren Greifbereich — eine
+    /// Linie von einem Punkt Breite trifft man sonst kaum.
+    private var resizeHandle: some View {
+        Divider()
+            .overlay {
+                Color.clear
+                    .frame(width: 10)
+                    .contentShape(.rect)
+                    .onHover { inside in
+                        if inside {
+                            NSCursor.resizeLeftRight.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 1)
+                            .onChanged { value in
+                                let start = widthAtDragStart ?? inspectorWidth
+                                widthAtDragStart = start
+                                // Das Panel sitzt rechts: Ziehen nach links
+                                // vergrößert es.
+                                inspectorWidth = (start - value.translation.width)
+                                    .clamped(to: 260...620)
+                            }
+                            .onEnded { _ in widthAtDragStart = nil }
+                    )
+            }
     }
 
     @ViewBuilder
@@ -151,5 +189,12 @@ struct WelcomeView: View {
             .buttonStyle(.borderedProminent)
         }
         .frame(minWidth: 560, minHeight: 420)
+    }
+}
+
+
+extension Double {
+    func clamped(to range: ClosedRange<Double>) -> Double {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }
