@@ -232,3 +232,58 @@ public enum Ordering {
         }
     }
 }
+
+extension Track {
+    /// Die Felder, die im Inspector bearbeitet werden.
+    ///
+    /// Ein Entwurf darf nur diese tragen. Hielte er den ganzen Track, fröre
+    /// alles Übrige — Spalte, Phase, Release, Priorität — im Moment des
+    /// Auswählens ein, und der nächste Tastendruck schriebe diesen alten Stand
+    /// über das, was inzwischen auf dem Board passiert ist.
+    public struct Edits: Equatable, Sendable {
+        public var title: String
+        public var releaseTitle: String?
+        public var notes: String
+        public var tags: [String]
+        public var checks: [ListeningCheck]
+
+        public init(
+            title: String,
+            releaseTitle: String? = nil,
+            notes: String = "",
+            tags: [String] = [],
+            checks: [ListeningCheck] = []
+        ) {
+            self.title = title
+            self.releaseTitle = releaseTitle
+            self.notes = notes
+            self.tags = tags
+            self.checks = checks
+        }
+
+        public init(of track: Track) {
+            self.init(
+                title: track.title,
+                releaseTitle: track.releaseTitle,
+                notes: track.notes,
+                tags: track.tags,
+                checks: track.checks
+            )
+        }
+    }
+
+    public var edits: Edits { Edits(of: self) }
+
+    /// Übernimmt die bearbeiteten Felder in den **aktuellen** Stand. Ändert
+    /// sich nichts, bleibt auch `updated` stehen — sonst würde jede Anzeige
+    /// des Panels als Änderung gelten.
+    public mutating func apply(_ incoming: Edits, now: Date = Date()) {
+        guard incoming != edits else { return }
+        title = incoming.title
+        releaseTitle = incoming.releaseTitle
+        notes = incoming.notes
+        tags = incoming.tags
+        checks = incoming.checks
+        updated = now
+    }
+}

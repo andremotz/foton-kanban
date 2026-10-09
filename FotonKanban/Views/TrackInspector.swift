@@ -9,12 +9,12 @@ struct TrackInspector: View {
 
     /// Lokaler Entwurf für Textfelder und Haken, damit Tippen nicht bei jedem
     /// Zeichen eine Datei schreibt. Wird verzögert zurückgeschrieben.
-    @State private var draft: Track
+    @State private var draft: Track.Edits
     @State private var tagText: String
 
     init(track: Track) {
         self.track = track
-        _draft = State(initialValue: track)
+        _draft = State(initialValue: track.edits)
         _tagText = State(initialValue: track.tags.joined(separator: ", "))
     }
 
@@ -130,7 +130,7 @@ struct TrackInspector: View {
                 }
                 LabeledContent(
                     "Geändert",
-                    value: draft.updated.formatted(date: .abbreviated, time: .shortened)
+                    value: track.updated.formatted(date: .abbreviated, time: .shortened)
                 )
                 Button("Track löschen", role: .destructive) {
                     model.delete(trackID: track.id)
@@ -139,7 +139,7 @@ struct TrackInspector: View {
         }
         .formStyle(.grouped)
         .onChange(of: track.id) {
-            draft = track
+            draft = track.edits
             tagText = track.tags.joined(separator: ", ")
         }
         // Setzt der Nutzer die Checkliste zurück, kommt die Änderung aus dem
@@ -148,7 +148,7 @@ struct TrackInspector: View {
             if new != draft.checks { draft.checks = new }
         }
         .onChange(of: draft) { _, new in
-            model.scheduleSave(new)
+            model.scheduleSave(new, for: track.id)
         }
         .onDisappear(perform: commitTags)
     }

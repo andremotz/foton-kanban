@@ -172,3 +172,66 @@ struct OrderingTests {
         #expect(changed.map(\.order) == [2000, 3000])
     }
 }
+
+@Suite("Bearbeitete Felder überschreiben nichts anderes")
+struct TrackEditsTests {
+    /// Der gemeldete Fehler: Karte ausgewählt, nach `in progress` gezogen,
+    /// danach etwas in die Notizen geschrieben — und sie sprang zurück nach
+    /// `open`. Der Entwurf des Panels trug den ganzen Track und damit eine
+    /// eingefrorene Spalte.
+    @Test("Eine Notiz dreht einen Spaltenwechsel nicht zurück")
+    func notesDoNotRevertTheColumn() {
+        var track = Track(id: "vh5t", title: "Need to feel Loved", status: .open)
+        // Beim Auswählen entsteht der Entwurf.
+        let draft = track.edits
+
+        // Danach wandert die Karte auf dem Board.
+        track.move(to: .inProgress)
+
+        // Und jetzt wird getippt — mit dem Entwurf von vorhin.
+        var edited = draft
+        edited.notes = "Bassline implementieren"
+        track.apply(edited)
+
+        #expect(track.status == .inProgress)
+        #expect(track.notes == "Bassline implementieren")
+    }
+
+    @Test("Phase, Release, Priorität und Rundenzahl bleiben ebenfalls unberührt")
+    func keepsEverythingThePanelDoesNotEdit() {
+        var track = Track(
+            id: "a", title: "A", phase: .mastering, status: .review,
+            release: "r-1", order: 7000, reviewRounds: 3
+        )
+        var edited = track.edits
+        edited.title = "Neuer Titel"
+        edited.tags = ["dark"]
+        track.apply(edited)
+
+        #expect(track.title == "Neuer Titel")
+        #expect(track.tags == ["dark"])
+        #expect(track.phase == .mastering)
+        #expect(track.status == .review)
+        #expect(track.release == "r-1")
+        #expect(track.order == 7000)
+        #expect(track.reviewRounds == 3)
+    }
+
+    @Test("Ohne Änderung bleibt der Zeitstempel stehen")
+    func unchangedEditsDoNotTouchUpdated() {
+        let stamp = Date(timeIntervalSince1970: 1_000_000)
+        var track = Track(id: "a", title: "A", updated: stamp)
+        track.apply(track.edits, now: Date())
+        #expect(track.updated == stamp)
+    }
+
+    @Test("Eine echte Änderung frischt den Zeitstempel auf")
+    func realEditsRefreshUpdated() {
+        let stamp = Date(timeIntervalSince1970: 1_000_000)
+        var track = Track(id: "a", title: "A", updated: stamp)
+        var edited = track.edits
+        edited.notes = "etwas"
+        track.apply(edited, now: Date(timeIntervalSince1970: 2_000_000))
+        #expect(track.updated == Date(timeIntervalSince1970: 2_000_000))
+    }
+}

@@ -276,15 +276,24 @@ final class BoardModel {
 
     /// Verzögert speichern — für Tippen in Titel- und Notizfeldern, damit nicht
     /// jeder Tastendruck eine Datei schreibt.
-    func scheduleSave(_ track: Track) {
-        apply(track)
-        pendingSaves[track.id]?.cancel()
-        pendingSaves[track.id] = Task { [weak self] in
+    func scheduleSave(_ edits: Track.Edits, for trackID: String) {
+        applyEdits(edits, to: trackID, writing: false)
+        pendingSaves[trackID]?.cancel()
+        pendingSaves[trackID] = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(800))
             guard !Task.isCancelled else { return }
-            self?.update(track)
-            self?.pendingSaves[track.id] = nil
+            // Erst jetzt den aktuellen Stand holen: Zwischen Tastendruck und
+            // Schreiben kann die Karte verschoben worden sein, und davon darf
+            // dieser Vorgang nichts zurückdrehen.
+            self?.applyEdits(edits, to: trackID, writing: true)
+            self?.pendingSaves[trackID] = nil
         }
+    }
+
+    private func applyEdits(_ edits: Track.Edits, to trackID: String, writing: Bool) {
+        guard var track = repository.tracks.first(where: { $0.id == trackID }) else { return }
+        track.apply(edits)
+        if writing { update(track) } else { apply(track) }
     }
 
     private func apply(_ track: Track) {
