@@ -76,15 +76,15 @@ struct YearPlanView: View {
 
     private var releasesThisYear: [Release] {
         model.repository.scheduledReleases.filter { release in
-            guard let target = release.target else { return false }
-            return calendar.component(.year, from: target) == year
+            guard let date = release.planningDate else { return false }
+            return calendar.component(.year, from: date) == year
         }
     }
 
     private func releases(in month: Int) -> [Release] {
         releasesThisYear.filter { release in
-            guard let target = release.target else { return false }
-            return calendar.component(.month, from: target) == month
+            guard let date = release.planningDate else { return false }
+            return calendar.component(.month, from: date) == month
         }
     }
 
@@ -251,15 +251,18 @@ private struct ReleaseCard: View {
             }
 
             HStack(spacing: 12) {
-                DatePicker(
-                    "Termin",
-                    selection: Binding(
-                        get: { release.target ?? Date() },
-                        set: { newValue in update { $0.target = newValue } }
-                    ),
-                    displayedComponents: .date
+                // Zwei verschiedene Dinge, deshalb beschriftet: wann abgegeben
+                // wird, bestimmst du — wann es erscheint, oft das Label.
+                dateField(
+                    "Abgabe",
+                    date: release.submit,
+                    set: { model.setSubmit($0, for: release.id) }
                 )
-                .labelsHidden()
+                dateField(
+                    "Erscheint",
+                    date: release.target,
+                    set: { model.setTarget($0, for: release.id) }
+                )
 
                 Picker("Status", selection: Binding(
                     get: { release.state },
@@ -295,6 +298,38 @@ private struct ReleaseCard: View {
             Button("Abbrechen", role: .cancel) {}
         } message: {
             Text("Die \(tracks.count) zugeordneten Tracks wandern in den Backlog.")
+        }
+    }
+
+    /// Ein optionales Datum: leer heißt „steht noch nicht fest". Ein
+    /// DatePicker allein kann das nicht ausdrücken, deshalb der Knopf daneben.
+    @ViewBuilder
+    private func dateField(_ label: String, date: Date?, set: @escaping (Date?) -> Void)
+        -> some View
+    {
+        HStack(spacing: 3) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .fixedSize()
+            if let date {
+                DatePicker("", selection: Binding(get: { date }, set: { set($0) }),
+                           displayedComponents: .date)
+                    .labelsHidden()
+                Button {
+                    set(nil)
+                } label: {
+                    Image(systemName: "xmark.circle.fill").font(.caption2)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tertiary)
+                .help("\(label)datum entfernen")
+            } else {
+                Button("offen") { set(Date()) }
+                    .buttonStyle(.link)
+                    .font(.caption)
+            }
         }
     }
 

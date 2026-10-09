@@ -3,12 +3,17 @@ import Foundation
 public enum ReleaseState: String, CaseIterable, Codable, Sendable {
     case planned
     case inProgress = "in-progress"
+    /// Die Arbeit ist fertig und abgeliefert; wann es erscheint, entscheidet
+    /// jemand anderes. Ohne diesen Zustand musste man sich ein
+    /// Erscheinungsdatum ausdenken, um das Release nicht zu verlieren.
+    case submitted
     case released
 
     public var title: String {
         switch self {
         case .planned: "geplant"
         case .inProgress: "in Arbeit"
+        case .submitted: "abgegeben"
         case .released: "veröffentlicht"
         }
     }
@@ -19,8 +24,12 @@ public enum ReleaseState: String, CaseIterable, Codable, Sendable {
 public struct Release: Hashable, Codable, Sendable, Identifiable {
     public var id: String
     public var title: String
-    /// Wunschtermin. Wird von Hand gesetzt und in der Jahresansicht verschoben.
+    /// Erscheinungsdatum. Darf leer bleiben, solange es nicht feststeht — bei
+    /// einem abgegebenen Release nennt es oft erst das Label.
     public var target: Date?
+    /// Abgabetermin. Vor der Abgabe ein Plan, danach der Beleg, wann geliefert
+    /// wurde.
+    public var submit: Date?
     public var state: ReleaseState
     public var created: Date
     public var updated: Date
@@ -36,6 +45,7 @@ public struct Release: Hashable, Codable, Sendable, Identifiable {
         id: String,
         title: String,
         target: Date? = nil,
+        submit: Date? = nil,
         state: ReleaseState = .planned,
         created: Date = Date(),
         updated: Date = Date(),
@@ -46,6 +56,7 @@ public struct Release: Hashable, Codable, Sendable, Identifiable {
         self.id = id
         self.title = title
         self.target = target
+        self.submit = submit
         self.state = state
         self.created = created
         self.updated = updated
@@ -53,6 +64,15 @@ public struct Release: Hashable, Codable, Sendable, Identifiable {
         self.unknownFrontmatter = unknownFrontmatter
         self.extraSections = extraSections
     }
+
+    /// Das Datum, nach dem in der Planung einsortiert wird: das
+    /// Erscheinungsdatum, wenn es feststeht, sonst der Abgabetermin. Fehlt
+    /// beides, gehört das Release in die Spalte der ungeplanten.
+    public var planningDate: Date? { target ?? submit }
+
+    /// Ob die Arbeit daran abgeschlossen ist — abgegeben zählt dafür ebenso
+    /// wie veröffentlicht.
+    public var isFinished: Bool { state == .submitted || state == .released }
 
     /// Erzeugt ein Release mit einer aus dem Termin abgeleiteten, sprechenden ID
     /// (`r-2026-04`), die bei Kollision hochgezählt wird.

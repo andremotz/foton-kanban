@@ -132,6 +132,15 @@ struct SidebarView: View {
                 }
             }
 
+            // Die Warteliste: abgegeben, Veröffentlichung liegt bei anderen.
+            if !model.repository.submittedReleases.isEmpty {
+                Section("Abgegeben") {
+                    ForEach(model.repository.submittedReleases) { release in
+                        row(for: release)
+                    }
+                }
+            }
+
             // Das Archiv wächst mit jeder EP und wird selten gebraucht —
             // deshalb zugeklappt und unten.
             if !model.repository.releasedReleases.isEmpty {
@@ -166,15 +175,19 @@ struct SidebarView: View {
 
     @ViewBuilder
     private func row(for release: Release) -> some View {
-        let isReleased = release.state == .released
+        let isFinished = release.isFinished
         Label {
             HStack {
                 Text(release.title)
                 Spacer()
                 // Bei einer erschienenen EP sagt die Trackzahl nichts mehr —
                 // wann sie herauskam, schon. Ohne Termin bleibt die Zahl.
-                if isReleased, let target = release.target {
+                if release.state == .released, let target = release.target {
                     Text(Self.monthYear.string(from: target))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if release.state == .submitted, let submit = release.submit {
+                    Text(Self.monthYear.string(from: submit))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
@@ -184,13 +197,15 @@ struct SidebarView: View {
         } icon: {
             Image(systemName: icon(for: release.state))
         }
-        .foregroundStyle(isReleased ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+        .foregroundStyle(isFinished ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
         .tag(SidebarItem.release(release.id))
         .contextMenu {
-            Toggle("Veröffentlicht", isOn: Binding(
-                get: { isReleased },
-                set: { model.setReleased($0, for: release.id) }
-            ))
+            Picker("Zustand", selection: Binding(
+                get: { release.state },
+                set: { model.setState($0, for: release.id) }
+            )) {
+                ForEach(ReleaseState.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
         }
     }
 
@@ -214,6 +229,7 @@ struct SidebarView: View {
         switch state {
         case .planned: "circle.dashed"
         case .inProgress: "circle.lefthalf.filled"
+        case .submitted: "paperplane.circle"
         case .released: "checkmark.circle"
         }
     }

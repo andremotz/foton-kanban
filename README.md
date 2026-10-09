@@ -91,11 +91,18 @@ record. Both names count for search and for matching bounces, since older files
 carry the working name and later ones may already carry the new one. Cards show
 both side by side.
 
-## Released records get out of the way
+## Finished records get out of the way
 
-Marking a release as released — from the context menu in the sidebar — moves it
-into its own collapsed section at the bottom, showing its release month instead
-of a track count. Its tracks also drop out of the board's overall view so that
+A release runs through four states: planned, in progress, submitted, released.
+*Submitted* exists because the two halves of "done" rarely happen on the same
+day — the work is delivered, but the label decides when the record comes out.
+So a release carries two dates: a submission date you control and a release date
+that may stay empty until someone tells you. Planning sorts by the release date
+when there is one and by the submission date otherwise.
+
+Set the state from the context menu in the sidebar. Submitted and released
+records each move into their own section at the bottom, showing a month instead
+of a track count. Their tracks also drop out of the board's overall view so that
 only current work is listed there; a toolbar toggle brings them back, and
 selecting the release itself always shows it in full.
 

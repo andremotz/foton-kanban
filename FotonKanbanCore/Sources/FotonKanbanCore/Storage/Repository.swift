@@ -45,7 +45,7 @@ public struct Repository: Sendable, Equatable {
     /// Releases nach Termin, undatierte ans Ende.
     public var scheduledReleases: [Release] {
         releases.sorted { lhs, rhs in
-            switch (lhs.target, rhs.target) {
+            switch (lhs.planningDate, rhs.planningDate) {
             case (let l?, let r?): l < r
             case (nil, _?): false
             case (_?, nil): true
@@ -57,7 +57,21 @@ public struct Repository: Sendable, Equatable {
     /// Releases, an denen noch gearbeitet wird — nach Termin, undatierte ans
     /// Ende.
     public var activeReleases: [Release] {
-        scheduledReleases.filter { $0.state != .released }
+        scheduledReleases.filter { !$0.isFinished }
+    }
+
+    /// Abgegeben und wartet auf die Veröffentlichung — die Warteliste.
+    /// Jüngste Abgabe zuerst.
+    public var submittedReleases: [Release] {
+        releases.filter { $0.state == .submitted }
+            .sorted { lhs, rhs in
+                switch (lhs.submit, rhs.submit) {
+                case (let l?, let r?): l > r
+                case (_?, nil): true
+                case (nil, _?): false
+                case (nil, nil): lhs.title < rhs.title
+                }
+            }
     }
 
     /// Veröffentlichte Releases, das jüngste zuerst: Was zuletzt erschien, ist
@@ -79,12 +93,14 @@ public struct Repository: Sendable, Equatable {
     /// nie ein Datum geben.
     public var unscheduledReleases: [Release] {
         releases
-            .filter { $0.state != .released && $0.target == nil }
+            .filter { !$0.isFinished && $0.planningDate == nil }
             .sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
     }
 
-    public var releasedReleaseIDs: Set<String> {
-        Set(releases.filter { $0.state == .released }.map(\.id))
+    /// Releases, deren Arbeit erledigt ist. Ihre Tracks gehören nicht mehr in
+    /// die Gesamtansicht des Boards.
+    public var finishedReleaseIDs: Set<String> {
+        Set(releases.filter(\.isFinished).map(\.id))
     }
 
     public var trackIDs: Set<String> { Set(tracks.map(\.id)) }

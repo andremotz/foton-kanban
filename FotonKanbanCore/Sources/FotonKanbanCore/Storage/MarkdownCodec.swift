@@ -81,7 +81,7 @@ public enum MarkdownCodec {
     // MARK: - Release
 
     private static let releaseKeys: Set<String> = [
-        "id", "title", "target", "state", "created", "updated",
+        "id", "title", "target", "submit", "state", "created", "updated",
     ]
 
     public static func decodeRelease(_ markdown: String, fallbackID: String) throws -> Release {
@@ -98,6 +98,7 @@ public enum MarkdownCodec {
             id: id,
             title: front.nonEmptyString("title") ?? id,
             target: front.nonEmptyString("target").flatMap(DateFormatting.day(from:)),
+            submit: front.nonEmptyString("submit").flatMap(DateFormatting.day(from:)),
             state: state,
             created: created,
             updated: updated,
@@ -112,6 +113,7 @@ public enum MarkdownCodec {
         front.set("id", release.id)
         front.set("title", release.title)
         front.set("target", release.target.map(DateFormatting.day))
+        front.set("submit", release.submit.map(DateFormatting.day))
         front.set("state", release.state.rawValue)
         front.set("created", DateFormatting.timestamp(release.created))
         front.set("updated", DateFormatting.timestamp(release.updated))

@@ -178,7 +178,7 @@ struct FileTrackStoreTests {
         #expect(repository.activeReleases.map(\.id) == ["b", "a", "c"])
         // Veröffentlichte umgekehrt: zuletzt erschienen zuerst.
         #expect(repository.releasedReleases.map(\.id) == ["e", "d"])
-        #expect(repository.releasedReleaseIDs == ["d", "e"])
+        #expect(repository.finishedReleaseIDs == ["d", "e"])
     }
 
     @Test("Repository-Abfragen für Board, Backlog und Termine")
@@ -228,5 +228,68 @@ struct UnscheduledReleaseTests {
 
         repository.releases[0].target = DateFormatting.day(from: "2027-03-15")
         #expect(repository.unscheduledReleases.isEmpty)
+    }
+}
+
+
+@Suite("Abgegebene Releases")
+struct SubmittedReleaseTests {
+    /// Der Fall, für den es keinen Zustand gab: Die Arbeit ist fertig und
+    /// abgeliefert, das Erscheinungsdatum nennt erst das Label.
+    @Test("Abgegeben ohne Erscheinungsdatum wird nach der Abgabe einsortiert")
+    func placesSubmittedByItsSubmitDate() {
+        let release = Release(
+            id: "a", title: "Omni EP", submit: DateFormatting.day(from: "2026-10-07"),
+            state: .submitted
+        )
+        #expect(release.target == nil)
+        #expect(DateFormatting.day(try! #require(release.planningDate)) == "2026-10-07")
+        #expect(release.isFinished)
+    }
+
+    @Test("Ein Erscheinungsdatum sticht den Abgabetermin aus")
+    func targetWinsOverSubmit() {
+        let release = Release(
+            id: "a", title: "EP",
+            target: DateFormatting.day(from: "2026-12-01"),
+            submit: DateFormatting.day(from: "2026-10-07")
+        )
+        #expect(DateFormatting.day(try! #require(release.planningDate)) == "2026-12-01")
+    }
+
+    @Test("Abgegebene zählen als abgeschlossen und stehen nicht bei den aktiven")
+    func submittedCountsAsFinished() {
+        let repository = Repository(releases: [
+            Release(id: "a", title: "Aktiv", target: DateFormatting.day(from: "2027-01-01")),
+            Release(id: "b", title: "Abgegeben", submit: DateFormatting.day(from: "2026-10-07"),
+                    state: .submitted),
+            Release(id: "c", title: "Draußen", state: .released),
+        ])
+
+        #expect(repository.activeReleases.map(\.id) == ["a"])
+        #expect(repository.submittedReleases.map(\.id) == ["b"])
+        #expect(repository.finishedReleaseIDs == ["b", "c"])
+        // Abgegeben ist nicht ungeplant — es gehört nicht in die Arbeitsliste.
+        #expect(repository.unscheduledReleases.isEmpty)
+    }
+
+    @Test("Der Abgabetermin überlebt den Roundtrip")
+    func submitRoundTrips() throws {
+        let markdown = """
+            ---
+            id: r-omni
+            title: Omni EP
+            submit: 2026-10-07
+            state: submitted
+            ---
+            """
+        let release = try MarkdownCodec.decodeRelease(markdown, fallbackID: "x")
+        #expect(release.state == .submitted)
+        #expect(DateFormatting.day(try #require(release.submit)) == "2026-10-07")
+        #expect(release.target == nil)
+
+        let encoded = MarkdownCodec.encode(release)
+        #expect(encoded.contains("submit: 2026-10-07"))
+        #expect(!encoded.contains("target:"))
     }
 }

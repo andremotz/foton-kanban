@@ -17,10 +17,11 @@ final class BoardModel {
     private(set) var errorMessage: String?
 
     var sidebarSelection: SidebarItem? = .allTracks
-    /// Ob die Board-Ansicht auch Tracks veröffentlichter Releases zeigt.
+    /// Ob die Board-Ansicht auch Tracks abgeschlossener Releases zeigt —
+    /// abgegeben zählt dabei wie veröffentlicht.
     /// Eine Ansichtssache des Arbeitsplatzes, deshalb nicht im Board.
-    var showsReleasedTracks: Bool = UserDefaults.standard.bool(forKey: "showsReleasedTracks") {
-        didSet { UserDefaults.standard.set(showsReleasedTracks, forKey: "showsReleasedTracks") }
+    var showsFinishedTracks: Bool = UserDefaults.standard.bool(forKey: "showsReleasedTracks") {
+        didSet { UserDefaults.standard.set(showsFinishedTracks, forKey: "showsReleasedTracks") }
     }
     /// Mehrfachauswahl. Ein einzelner Track ist der Normalfall, deshalb gibt
     /// es `selectedTrack` weiterhin — es liefert nur bei genau einem etwas.
@@ -418,16 +419,29 @@ final class BoardModel {
         }
     }
 
-    /// Setzt ein Release auf veröffentlicht oder nimmt das zurück.
+    /// Setzt den Zustand eines Releases.
     ///
-    /// Nimmt den Zielzustand entgegen, statt blind zu kippen: Ein Umschalter,
-    /// der den eingehenden Wert ignoriert, dreht sich bei jedem unbeabsichtigten
-    /// Schreibzugriff um.
-    func setReleased(_ isReleased: Bool, for releaseID: String) {
+    /// Beim Wechsel auf „abgegeben" wird der Abgabetermin mit dem heutigen Tag
+    /// gefüllt, falls er fehlt — man gibt an dem Tag ab, an dem man es
+    /// markiert, und soll das nicht zweimal eintragen müssen.
+    func setState(_ state: ReleaseState, for releaseID: String) {
         guard var release = repository.releases.first(where: { $0.id == releaseID }),
-            (release.state == .released) != isReleased
+            release.state != state
         else { return }
-        release.state = isReleased ? .released : .inProgress
+        release.state = state
+        if state == .submitted, release.submit == nil {
+            release.submit = Calendar.current.startOfDay(for: Date())
+        }
+        release.updated = Date()
+        update(release)
+    }
+
+    /// Setzt oder entfernt den Abgabetermin.
+    func setSubmit(_ date: Date?, for releaseID: String) {
+        guard var release = repository.releases.first(where: { $0.id == releaseID }),
+            release.submit != date
+        else { return }
+        release.submit = date
         release.updated = Date()
         update(release)
     }
@@ -487,8 +501,8 @@ final class BoardModel {
             // In der Gesamtansicht zählt, woran gerade gearbeitet wird. Wer ein
             // veröffentlichtes Release ausdrücklich anwählt, sieht es weiterhin
             // vollständig — der Filter greift nur hier.
-            if !showsReleasedTracks, let release = track.release,
-                repository.releasedReleaseIDs.contains(release) {
+            if !showsFinishedTracks, let release = track.release,
+                repository.finishedReleaseIDs.contains(release) {
                 return false
             }
         default: break

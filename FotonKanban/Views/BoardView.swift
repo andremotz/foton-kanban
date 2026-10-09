@@ -79,21 +79,21 @@ struct BoardView: View {
             // Nur in der Gesamtansicht wird etwas ausgeblendet, und nur wenn
             // es überhaupt ein veröffentlichtes Release gibt.
             if model.sidebarSelection == .allTracks,
-                !model.repository.releasedReleases.isEmpty {
+                !model.repository.finishedReleaseIDs.isEmpty {
                 ToolbarItem(placement: .automatic) {
                     Toggle(isOn: Binding(
-                        get: { model.showsReleasedTracks },
-                        set: { model.showsReleasedTracks = $0 }
+                        get: { model.showsFinishedTracks },
+                        set: { model.showsFinishedTracks = $0 }
                     )) {
                         Label(
-                            "Veröffentlichte einblenden",
-                            systemImage: model.showsReleasedTracks ? "eye" : "eye.slash"
+                            "Abgeschlossene einblenden",
+                            systemImage: model.showsFinishedTracks ? "eye" : "eye.slash"
                         )
                     }
                     .help(
-                        model.showsReleasedTracks
-                            ? "Tracks veröffentlichter Releases ausblenden"
-                            : "Tracks veröffentlichter Releases einblenden"
+                        model.showsFinishedTracks
+                            ? "Tracks abgegebener und veröffentlichter Releases ausblenden"
+                            : "Tracks abgegebener und veröffentlichter Releases einblenden"
                     )
                 }
             }

@@ -47,13 +47,25 @@ Ein Release ist eine eigenständige Entität mit eigenem Zustand, nicht bloß ei
 Tag. Tracks referenzieren es über ein Feld — deshalb ist ein Track zwischen
 Releases verschiebbar, ohne dass eine Datei den Ordner wechselt.
 
-Zustände: `planned` → `in progress` → `released`.
+Zustände: `planned` → `in progress` → `submitted` → `released`.
 
-Veröffentlichte Releases wandern in der Seitenleiste in einen eigenen,
-zugeklappten Abschnitt — das Archiv wächst mit jeder EP und wird selten
-gebraucht. Dort steht das Erscheinungsdatum statt der Trackzahl, die nach der
-Veröffentlichung nichts mehr aussagt. Markiert wird über das Kontextmenü des
-Eintrags.
+`submitted` trennt zwei Dinge, die vorher zusammenfielen: die eigene Arbeit ist
+fertig und abgeliefert, aber wann die Platte erscheint, entscheidet das Label.
+Ohne diesen Zustand musste man sich ein Erscheinungsdatum ausdenken, nur damit
+das Release nicht aus der Planung fiel.
+
+Dazu gehören zwei Daten. `submit` ist der Abgabetermin — vorher ein Plan,
+nachher der Beleg, wann geliefert wurde. `target` ist das Erscheinungsdatum und
+darf leer bleiben, solange es nicht feststeht. Einsortiert wird nach dem
+Erscheinungsdatum, wenn es da ist, sonst nach der Abgabe; fehlt beides, steht
+das Release in der Spalte der ungeplanten.
+
+Abgegebene und veröffentlichte Releases wandern in der Seitenleiste in je einen
+eigenen Abschnitt — das Archiv wächst mit jeder EP und wird selten gebraucht.
+Dort steht der Monat statt der Trackzahl, die nach der Abgabe nichts mehr
+aussagt. Der Zustand wird über das Kontextmenü des Eintrags gesetzt; beim
+Wechsel auf `submitted` trägt die App das heutige Datum als Abgabe ein, falls
+noch keines dasteht.
 
 Ihre Tracks fallen zugleich aus der Gesamtansicht des Boards heraus, damit dort
 nur steht, woran gearbeitet wird. Ein Schalter in der Werkzeugleiste blendet
@@ -168,6 +180,7 @@ Bassline ab 1:40 zu dominant.
 ---
 id: r-2026-09
 title: EP 04
+submit: 2026-09-04
 target: 2026-09-18
 state: in-progress
 created: 2026-05-02T11:00:00+02:00
