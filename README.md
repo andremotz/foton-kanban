@@ -106,6 +106,22 @@ of a track count. Their tracks also drop out of the board's overall view so that
 only current work is listed there; a toolbar toggle brings them back, and
 selecting the release itself always shows it in full.
 
+## Notes read the way you wrote them
+
+Notes are stored as Markdown and shown formatted: `**bold**`, `*italic*` and
+`~~struck through~~` render as what they mean instead of showing their markers.
+⌘B, ⌘I and ⇧⌘X apply them to a selection, Return continues a list (checkboxes
+come back unticked), Tab and ⇧Tab change a list item's indent, and ⇧⌘D drops in
+today's date as its own line.
+
+Typed Markdown stays Markdown — writing `~~done~~` by hand means struck
+through, not four literal tildes. The file keeps your wording either way: a
+note is only editable with formatting when it survives Markdown → text →
+Markdown unchanged, character for character, and anything else gets the plain
+text editor rather than being silently rewritten.
+
+The formatted editor needs macOS 26; below that the field stays plain text.
+
 ## Working on several cards at once
 
 ⌘-click adds a card to the selection, ⇧-click extends it within the column.

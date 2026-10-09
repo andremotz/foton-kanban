@@ -57,7 +57,7 @@ struct TrackInspector: View {
             }
 
             Section("Notizen") {
-                TextEditor(text: $draft.notes)
+                NotesEditor(text: $draft.notes)
                     .font(.body)
                     .frame(minHeight: 140)
                     .scrollContentBackground(.hidden)

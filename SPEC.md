@@ -41,6 +41,34 @@ nach einem Import stehen fast alle Tracks in derselben Phase —, und die Regel
 kaperte die häufigste Geste: Wer eine Karte auf `done` zog, fand sie in
 `in progress` wieder.
 
+### Notizen
+
+Notizen werden als Markdown gespeichert und formatiert angezeigt. Erkannt
+werden `**fett**`, `*kursiv*` und `~~durchgestrichen~~` — und nur das.
+Unterstriche bleiben Text, weil sie in Dateinamen wie
+`Techno_Files_demucs3_instrumental` stecken; Links bleiben Text, weil
+Foundations Parser sie in ein Attribut zieht und die Klammern aus dem Text
+entfernt.
+
+Ausgezeichnet wird ausschließlich *innerhalb* einer Zeile. Blockstruktur —
+Listen, Einrückung, Leerzeilen — ist für den Editor gewöhnlicher Text. Das ist
+Absicht: Foundations Markdown-Parser versteht Listen zwar, verschiebt die
+Zeilenumbrüche dabei aber in `presentationIntent`, das SwiftUIs Editor
+ignoriert; aus zwei Listenpunkten wird dort eine zusammengeklebte Zeile. So
+kann das Umschreiben die Gliederung einer Notiz gar nicht erst zerstören.
+
+Formatiert bearbeitbar ist eine Notiz nur, wenn sie den Weg Markdown → Text →
+Markdown zeichengenau übersteht (`InlineMarkdown.roundTrips`). Alles andere
+bekommt den Klartext-Editor, statt beim bloßen Öffnen umgeschrieben zu werden.
+
+Beim Speichern gilt die Regel, die der Schreibweise dieser Notizen entspricht:
+Von Hand getipptes Markdown bleibt stehen und wird beim nächsten Öffnen als
+Auszeichnung gelesen — wer `~~weg~~` tippt, meint durchgestrichen. Maskiert
+wird nur das Gegenteil, Markerzeichen innerhalb einer gesetzten Auszeichnung.
+
+Der formatierte Editor braucht macOS 26 (`TextEditor` mit `AttributedString`).
+Darunter bleibt es beim Klartextfeld; das Bereitstellungsziel bleibt macOS 14.
+
 ### Release
 
 Ein Release ist eine eigenständige Entität mit eigenem Zustand, nicht bloß ein
