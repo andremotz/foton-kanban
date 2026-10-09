@@ -432,6 +432,16 @@ final class BoardModel {
         update(release)
     }
 
+    /// Setzt oder entfernt den Termin eines Releases.
+    func setTarget(_ date: Date?, for releaseID: String) {
+        guard var release = repository.releases.first(where: { $0.id == releaseID }),
+            release.target != date
+        else { return }
+        release.target = date
+        release.updated = Date()
+        update(release)
+    }
+
     func update(_ release: Release) {
         guard let store else { return }
         if let index = repository.releases.firstIndex(where: { $0.id == release.id }) {

@@ -203,3 +203,30 @@ struct FileTrackStoreTests {
         #expect(repository.release("r1")?.title == "EP 04")
     }
 }
+
+@Suite("Noch nicht geplante Releases")
+struct UnscheduledReleaseTests {
+    /// Die Falle: Die Planung zeigt Releases nach ihrem Termin. Ein Release
+    /// ohne Termin erschien damit in keinem Jahr — und konnte dort nie eines
+    /// bekommen.
+    @Test("Aktive Releases ohne Termin werden aufgeführt, veröffentlichte nicht")
+    func listsOnlyActiveUndated() {
+        let repository = Repository(releases: [
+            Release(id: "a", title: "Ohne Termin, aktiv"),
+            Release(id: "b", title: "Mit Termin", target: DateFormatting.day(from: "2027-01-31")),
+            Release(id: "c", title: "Ohne Termin, veröffentlicht", state: .released),
+            Release(id: "d", title: "Auch ohne Termin", state: .inProgress),
+        ])
+
+        #expect(repository.unscheduledReleases.map(\.id) == ["d", "a"])
+    }
+
+    @Test("Ein Termin nimmt das Release aus der Liste")
+    func schedulingRemovesItFromTheList() {
+        var repository = Repository(releases: [Release(id: "a", title: "Bootlegs")])
+        #expect(repository.unscheduledReleases.count == 1)
+
+        repository.releases[0].target = DateFormatting.day(from: "2027-03-15")
+        #expect(repository.unscheduledReleases.isEmpty)
+    }
+}

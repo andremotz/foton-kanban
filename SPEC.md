@@ -228,6 +228,17 @@ aufeinanderfolgenden Releases wird der Abstand in Wochen angezeigt, damit eine
 gleichmäßige Kadenz (Richtwert 6 Wochen) sichtbar wird. Pro Release: Anzahl
 Tracks und wie viele davon fertig sind.
 
+### Ohne Termin
+
+Die Planung ordnet Releases nach ihrem Termin — ein Release ohne Termin
+erschiene damit in keinem Jahr und könnte dort auch nie eines bekommen. Eine
+Spalte links der Monate führt deshalb die **aktiven** Releases ohne Termin auf;
+von dort zieht man eines auf einen Monat und es ist terminiert, zunächst auf
+die Monatsmitte. Veröffentlichte bleiben draußen: Bei ihnen wäre ein Termin
+nur noch Nachtrag.
+
+Die Spalte ist zugleich eine Arbeitsliste — was dort steht, ist nicht geplant.
+
 ### Backlog
 Tracks ohne Release. Auswahl über die Seitenleiste.
 

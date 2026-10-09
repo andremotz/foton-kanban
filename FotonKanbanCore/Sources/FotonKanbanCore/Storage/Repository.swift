@@ -74,6 +74,15 @@ public struct Repository: Sendable, Equatable {
             }
     }
 
+    /// Aktive Releases ohne Termin. Sie tauchen in keinem Jahr der Planung
+    /// auf und brauchen deshalb einen eigenen Platz — sonst ließe sich ihnen
+    /// nie ein Datum geben.
+    public var unscheduledReleases: [Release] {
+        releases
+            .filter { $0.state != .released && $0.target == nil }
+            .sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
+    }
+
     public var releasedReleaseIDs: Set<String> {
         Set(releases.filter { $0.state == .released }.map(\.id))
     }
